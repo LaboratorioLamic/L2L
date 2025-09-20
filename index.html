@@ -152,6 +152,14 @@
             .loading-icon {
                 font-size: 48px;
             }
+            .logo-container {
+                position: relative;
+                left: auto;
+                top: auto;
+                display: flex;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
             .logo-container img {
                 width: 80px;
             }
@@ -202,14 +210,19 @@
             });
         }
 
-        // Capturar evento de instalação
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
+        // Exibir o prompt de instalação na primeira visita
+        window.addEventListener('load', () => {
             if (!localStorage.getItem('installPromptShown')) {
                 document.getElementById('installPrompt').style.display = 'block';
                 localStorage.setItem('installPromptShown', 'true');
             }
+        });
+
+        // Capturar evento de instalação
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Evento beforeinstallprompt disparado');
         });
 
         // Lógica do botão de instalação
@@ -223,6 +236,9 @@
                     deferredPrompt = null;
                     document.getElementById('installPrompt').style.display = 'none';
                 });
+            } else {
+                console.log('Instalação não disponível no momento');
+                document.getElementById('installPrompt').style.display = 'none';
             }
         });
 
