@@ -1,0 +1,20 @@
+{
+    "name": "LAMIC Apoiados",
+    "short_name": "LAMIC Apoiados",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#f4f7fa",
+    "theme_color": "#1a2b5f",
+    "icons": [
+        {
+            "src": "https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
