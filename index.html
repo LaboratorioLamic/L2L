@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparar Orçamento de Exames</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 10px;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .dropdown-item {
+            padding: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .dropdown-item:hover {
+            background-color: #f0f0f0;
+        }
+        table {
+            width: 100%;
+            max-width: 1200px;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #1a2b5f;
+            color: white;
+        }
+        .total-row th {
+            background-color: #ebebebd8;
+            color: #525252;
+            font-weight: bold;
+        }
+        .delete-btn {
+            cursor: pointer;
+            color: #dc3545;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+        .delete-btn:hover {
+            color: #a71d2a;
+        }
+        /* Loading overlay styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-icon {
+            font-size: 64px;
+            color: #2c3e50;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .button-container {
+            display: flex;
+            justify-content: center; /* Center buttons horizontally */
+            gap: 10px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        .view-all-btn, #clearList {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            flex: 1;
+            max-width: 200px;
+        }
+        .view-all-btn {
+            background-color: #2c3e50; /* Navy blue */
+            color: white;
+        }
+        .view-all-btn:hover {
+            background-color: #1a2b5f;
+        }
+        #clearList {
+            background-color: #dc3545;
+            color: white;
+        }
+        #clearList:hover {
+            background-color: #a71d2a;
+        }
+        @media (max-width: 768px) {
+            table {
+                font-size: 14px;
+            }
+            .loading-icon {
+                font-size: 48px;
+            }
+            .view-all-btn, #clearList {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Lista de Exames Apoiados</h1>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
+        <div id="dropdown"></div>
+    </div>
+    <div class="button-container">
+        <button class="view-all-btn" id="viewAllBtn">Visualizar tudo</button>
+        <button id="clearList">Apagar Lista</button>
+    </div>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <i class="fas fa-spinner loading-icon"></i>
+    </div>
+    <table id="comparisonTable">
+        <thead id="tableHeader"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+    <script>
+        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
+        const testData = [
+            { Exame: 'Exame Sangue Completo', Prazo: '3 dias', Valor: 150 },
+        ];
+        let examsData = {};
+        async function loadData() {
+            // Show loading overlay
+            document.getElementById('loadingOverlay').style.display = 'flex';
+           
+            let data;
+            try {
+                const response = await fetch(sheetsUrl);
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    throw new Error('Falha ao carregar dados do Google Sheets');
+                }
+            } catch (error) {
+                console.warn('Usando dados de teste:', error);
+                data = testData;
+            }
+            data.forEach(row => {
+                const exame = row.Exame;
+                const prazo = row.Prazo;
+                const valor = parseFloat(row.Valor);
+                if (!examsData[exame]) {
+                    examsData[exame] = { prazo, valor };
+                }
+            });
+            renderTableHeader();
+            // Hide loading overlay after rendering
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        function renderTableHeader() {
+            const header = document.getElementById('tableHeader');
+            let headerRow = '<tr><th>Exame</th><th>Prazo</th><th>Valor</th><th></th></tr>';
+            let totalRow = '<tr class="total-row"><th>Total</th><th></th><th id="totalValor">R$ 0.00</th><th></th></tr>';
+            header.innerHTML = headerRow + totalRow;
+        }
+        function updateTotals() {
+            let total = 0;
+            const rows = document.getElementById('tableBody').querySelectorAll('tr');
+            rows.forEach(row => {
+                const valorCell = row.querySelector('td:nth-child(3)');
+                if (valorCell) {
+                    const value = parseFloat(valorCell.textContent.replace('R$ ', ''));
+                    if (!isNaN(value)) {
+                        total += value;
+                    }
+                }
+            });
+            document.getElementById('totalValor').textContent = `R$ ${total.toFixed(2)}`;
+        }
+        function addExamToTable(exame) {
+            const body = document.getElementById('tableBody');
+            const row = document.createElement('tr');
+            const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A' };
+            const displayValor = data.valor !== 'N/A' ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
+            row.innerHTML = `<td>${exame}</td><td>${data.prazo}</td><td>${displayValor}</td><td><i class="fas fa-trash delete-btn" onclick="deleteRow(this)"></i></td>`;
+            body.appendChild(row);
+            updateTotals();
+        }
+        function deleteRow(button) {
+            const row = button.parentElement.parentElement;
+            row.remove();
+            updateTotals();
+        }
+        function filterExams(query) {
+            const dropdown = document.getElementById('dropdown');
+            dropdown.innerHTML = '';
+            if (!query) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            const matchingExams = Object.keys(examsData).filter(exame => exame.toLowerCase().includes(query.toLowerCase()));
+            if (matchingExams.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            matchingExams.forEach(exame => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.textContent = exame;
+                item.onclick = () => {
+                    addExamToTable(exame);
+                    document.getElementById('searchInput').value = '';
+                    dropdown.style.display = 'none';
+                };
+                dropdown.appendChild(item);
+            });
+            dropdown.style.display = 'block';
+        }
+        function viewAllExams() {
+            document.getElementById('tableBody').innerHTML = ''; // Clear current table
+            Object.keys(examsData).forEach(exame => {
+                addExamToTable(exame);
+            });
+        }
+        document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
+        document.addEventListener('click', (e) => {
+            if (!document.querySelector('.search-container').contains(e.target)) {
+                document.getElementById('dropdown').style.display = 'none';
+            }
+        });
+        document.getElementById('clearList').addEventListener('click', () => {
+            document.getElementById('tableBody').innerHTML = '';
+            updateTotals();
+        });
+        document.getElementById('viewAllBtn').addEventListener('click', viewAllExams);
+        loadData();
+    </script>
+</body>
+</html>
