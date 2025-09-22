@@ -349,7 +349,6 @@
                 if (response.ok) {
                     const jsonData = await response.json();
                     users = jsonData.users || [];  // Extrai o array de "users"
-                    console.log('Usuários carregados com sucesso:', users);
                 } else {
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
