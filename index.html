@@ -96,54 +96,6 @@
             width: 200px;
             height: auto;
         }
-        .install-prompt {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            z-index: 1001;
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .install-prompt p {
-            margin: 0 0 20px;
-            font-size: 16px;
-        }
-        .install-button {
-            background-color: #1a2b5f;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .install-button:hover {
-            background-color: #2c3e50;
-        }
-        .install-button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: red;
-            font-size: 20px;
-            cursor: pointer;
-        }
         .login-overlay {
             position: fixed;
             top: 0;
@@ -223,6 +175,41 @@
             margin-top: 10px;
             display: none;
         }
+        .install-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        .install-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+            border: 2px solid #332a8a;
+        }
+        .install-box button {
+            background-color: #1a2b5f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .install-box button:hover {
+            background-color: #2c3e50;
+        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -260,6 +247,13 @@
             <p id="waitMessage">Aguarde para tentar novamente</p>
         </div>
     </div>
+    <div class="install-overlay" id="installOverlay">
+        <div class="install-box">
+            <h2>Instalar o App?</h2>
+            <p>Adicione este app à sua tela inicial para acesso rápido no Chrome.</p>
+            <button id="installButton">Instalar</button>
+        </div>
+    </div>
     <div class="logo-container">
         <img src="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/logo.png" alt="Logo">
     </div>
@@ -270,11 +264,6 @@
     </div>
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <i class="fas fa-spinner loading-icon"></i>
-    </div>
-    <div class="install-prompt" id="installPrompt" style="display: none;">
-        <button class="close-button" id="closePrompt">X</button>
-        <p id="installMessage">Deseja instalar esta página como aplicativo?</p>
-        <button class="install-button" id="installButton">Instalar</button>
     </div>
     <table id="comparisonTable">
         <thead id="tableHeader"></thead>
@@ -287,16 +276,12 @@
             { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null },
         ];
         // Fallback user list in case info.json fails to load
-        const fallbackUsers = [
-            { user: 'admin', password: 'admin123' },
-            { user: 'guest', password: 'guest123' }
-        ];
         let examsData = {};
-        let deferredPrompt = null;
         let loginAttempts = 0;
         let lockoutTime = 10;
         let isLocked = false;
         let users = [];
+        let deferredPrompt;
 
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
@@ -308,16 +293,43 @@
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
 
-        // Function to show install prompt if available
-        function showInstallPrompt() {
-            document.getElementById('installPrompt').style.display = 'flex';
+        // Register Service Worker for PWA installability
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registrado com sucesso:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('Falha ao registrar Service Worker:', error);
+                    });
+            });
+        }
+
+        // PWA Install Prompt (mantido no contexto principal, pois o Service Worker não pode exibir prompts de UI diretamente)
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            document.getElementById('installOverlay').style.display = 'none';
+        });
+
+        document.getElementById('installButton').addEventListener('click', async () => {
             if (deferredPrompt) {
-                document.getElementById('installButton').disabled = false;
-                console.log('Prompt de instalação exibido após login');
-            } else {
-                document.getElementById('installButton').textContent = 'Instalação não disponível';
-                document.getElementById('installButton').disabled = true;
-                console.log('Prompt de instalação exibido, mas instalação não suportada neste navegador');
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('installOverlay').style.display = 'none';
+            }
+        });
+
+        function showInstallPrompt() {
+            if (deferredPrompt && !localStorage.getItem('installPromptShown')) {
+                document.getElementById('installOverlay').style.display = 'flex';
+                localStorage.setItem('installPromptShown', 'true');
             }
         }
 
@@ -334,7 +346,6 @@
                 }
             } catch (error) {
                 console.warn('Falha ao carregar usuários, usando lista de fallback:', error);
-                users = fallbackUsers;
             }
             const userSelect = document.getElementById('userSelect');
             userSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Clear and reset
@@ -367,9 +378,7 @@
                 loginAttempts = 0;
                 lockoutTime = 10;
                 
-                // Show install prompt after successful login
                 showInstallPrompt();
-                
                 loadData();
             } else {
                 loginAttempts++;
@@ -412,66 +421,6 @@
             if (e.key === 'Enter' && !isLocked) {
                 document.getElementById('loginButton').click();
             }
-        });
-
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-                    .then(registration => {
-                        console.log('Service Worker registrado com sucesso:', registration);
-                    })
-                    .catch(error => {
-                        console.error('Falha ao registrar Service Worker:', error);
-                        console.warn('Verifique se o arquivo /service-worker.js existe e está acessível no mesmo domínio.');
-                    });
-            });
-        }
-
-        // Handle beforeinstallprompt event - store but do not show immediately
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('Evento beforeinstallprompt disparado e armazenado');
-            // Only show after login via showInstallPrompt()
-        });
-
-        // Fallback for desktop browsers - removed empty setTimeout
-
-        // Handle install button click
-        document.getElementById('installButton').addEventListener('click', () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('Usuário aceitou instalar o aplicativo');
-                    } else {
-                        console.log('Usuário recusou instalar o aplicativo');
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('installPrompt').style.display = 'none';
-                });
-            } else {
-                console.log('Instalação não suportada neste navegador');
-                // Opcionalmente, fechar o prompt ou mostrar uma mensagem
-                document.getElementById('installPrompt').style.display = 'none';
-            }
-        });
-
-        // Close prompt - clear deferredPrompt to prevent re-showing
-        document.getElementById('closePrompt').addEventListener('click', () => {
-            document.getElementById('installPrompt').style.display = 'none';
-            if (deferredPrompt) {
-                deferredPrompt = null; // Clear to avoid re-showing
-            }
-            console.log('Prompt de instalação fechado e limpo');
-        });
-
-        // Handle app installed
-        window.addEventListener('appinstalled', () => {
-            console.log('Aplicativo instalado com sucesso');
-            document.getElementById('installPrompt').style.display = 'none';
-            deferredPrompt = null;
         });
 
         // Load data from Google Sheets
