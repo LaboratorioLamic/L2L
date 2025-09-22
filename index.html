@@ -7,7 +7,7 @@
     <title>Lamic Apoiados</title>
     <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png" type="image/png">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png">
-    <link rel="manifest" href="/manifest.json"> <!-- Ensure manifest.json is hosted locally -->
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
@@ -23,6 +23,7 @@
         h1 {
             color: #2c3e50;
             margin-bottom: 20px;
+            font-size: clamp(1.5rem, 5vw, 2rem);
         }
         .search-container {
             position: relative;
@@ -88,6 +89,46 @@
             width: 200px;
             height: auto;
         }
+        .install-prompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1001;
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        .install-prompt p {
+            margin: 0 0 20px;
+            font-size: 16px;
+        }
+        .install-button {
+            background-color: #1a2b5f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .install-button:hover {
+            background-color: #2c3e50;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: red;
+            font-size: 20px;
+            cursor: pointer;
+        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -120,18 +161,22 @@
     <div class="loading-overlay" id="loadingOverlay">
         <i class="fas fa-spinner loading-icon"></i>
     </div>
+    <div class="install-prompt" id="installPrompt" style="display: none;">
+        <button class="close-button" id="closePrompt">X</button>
+        <p>Deseja instalar página como aplicativo?</p>
+        <button class="install-button" id="installButton">Instalar</button>
+    </div>
     <table id="comparisonTable">
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
     </table>
     <script>
-        // URL for fetching data from Google Sheets
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
-        // Test data as fallback
         const testData = [
             { Exame: 'Exame Sangue Completo', Prazo: '3 dias', Valor: 150 },
         ];
         let examsData = {};
+        let deferredPrompt = null;
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -147,17 +192,35 @@
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); // Prevent default browser prompt
-            window.deferredPrompt = e; // Store for manual triggering if needed
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').style.display = 'block';
             console.log('Evento beforeinstallprompt disparado');
         });
 
-        // Log when the app is installed
+        document.getElementById('installButton').addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuário aceitou instalar o aplicativo');
+                    } else {
+                        console.log('Usuário recusou instalar o aplicativo');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').style.display = 'none';
+                });
+            }
+        });
+
+        document.getElementById('closePrompt').addEventListener('click', () => {
+            document.getElementById('installPrompt').style.display = 'none';
+        });
+
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
         });
 
-        // Load data from Google Sheets or use test data as fallback
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
             let data;
@@ -185,13 +248,11 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
-        // Render table header
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
             header.innerHTML = '<tr><th>Exame</th><th>Prazo</th><th>Valor</th></tr>';
         }
 
-        // Render table body
         function renderTable(exams) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
@@ -204,7 +265,6 @@
             });
         }
 
-        // Filter exams based on search input
         function filterExams(query) {
             const matchingExams = Object.keys(examsData).filter(exame =>
                 exame.toLowerCase().includes(query.toLowerCase())
@@ -215,10 +275,8 @@
             }
         }
 
-        // Add search input event listener
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
 
-        // Load data on page load
         window.onload = function() {
             loadData();
         };
