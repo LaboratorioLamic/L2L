@@ -194,25 +194,9 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Check if app is installed (works on both mobile and desktop)
-            checkAppInstalled();
+            document.getElementById('installPrompt').style.display = 'block';
+            console.log('Evento beforeinstallprompt disparado');
         });
-
-        async function checkAppInstalled() {
-            if ('getInstalledRelatedApps' in navigator) {
-                const relatedApps = await navigator.getInstalledRelatedApps();
-                if (relatedApps.length === 0) {
-                    document.getElementById('installPrompt').style.display = 'block';
-                    console.log('Nenhum aplicativo relacionado instalado, exibindo prompt (móvel ou desktop)');
-                } else {
-                    console.log('Aplicativo já instalado, ocultando prompt');
-                }
-            } else {
-                // Fallback for browsers that don't support getInstalledRelatedApps
-                document.getElementById('installPrompt').style.display = 'block';
-                console.log('getInstalledRelatedApps não suportado, exibindo prompt (móvel ou desktop)');
-            }
-        }
 
         document.getElementById('installButton').addEventListener('click', () => {
             if (deferredPrompt) {
@@ -235,7 +219,6 @@
 
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
-            document.getElementById('installPrompt').style.display = 'none';
         });
 
         async function loadData() {
