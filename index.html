@@ -90,7 +90,7 @@
         }
         .install-banner {
             position: fixed;
-            bottom: 70px; /* Acima da tab-bar */
+            bottom: 70px;
             left: 10px;
             right: 10px;
             background-color: #ffffff;
@@ -108,20 +108,16 @@
             text-align: center;
             transition: bottom 0.3s ease;
         }
-       
         .install-banner.minimized {
             bottom: 10px;
         }
-       
         .install-banner.show {
             display: flex;
         }
-       
         .install-banner p {
             margin: 0;
             font-weight: 500;
         }
-       
         .install-banner button {
             background-color: #001f3f;
             color: #ffffff;
@@ -133,11 +129,9 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-       
         .install-banner button:hover {
             background-color: #007bff;
         }
-       
         .install-banner .close-install {
             background: none;
             border: none;
@@ -148,7 +142,6 @@
             top: 10px;
             right: 10px;
         }
-       
         @keyframes slideUp {
             from { transform: translateY(100px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -172,15 +165,13 @@
                 width: 200px;
             }
             .install-banner {
-                bottom: 60px; /* Ajustado para telas menores */
+                bottom: 60px;
                 padding: 10px;
                 font-size: 0.8em;
             }
-           
             .install-banner.minimized {
                 bottom: 10px;
             }
-           
             .install-banner button {
                 padding: 6px 12px;
                 font-size: 0.8em;
@@ -221,6 +212,7 @@
                     })
                     .catch(error => {
                         console.error('Falha ao registrar Service Worker:', error);
+                        console.warn('Verifique se o service-worker.js está acessível e no mesmo domínio. Pode ser necessário hospedá-lo localmente.');
                     });
             });
         }
@@ -231,7 +223,7 @@
             deferredPrompt = e;
             isInstallSupported = true;
             console.log('Evento beforeinstallprompt disparado');
-            showInstallBanner(); // Mostrar banner quando o evento for disparado
+            showInstallBanner(); // Mostrar banner somente após o evento
         });
 
         // Verificar se o aplicativo já está instalado
@@ -282,7 +274,7 @@
                     });
                 } else {
                     console.error('Prompt de instalação não disponível');
-                    alert('A instalação não está disponível no momento. Tente instalar manualmente pelo menu do navegador.');
+                    alert('A instalação não está disponível no momento. Use a opção "Adicionar à tela inicial" no menu do navegador.');
                 }
             });
 
@@ -351,7 +343,6 @@
 
         window.onload = function() {
             loadData();
-            // O banner será exibido apenas se o evento beforeinstallprompt for disparado
         };
     </script>
 </body>
