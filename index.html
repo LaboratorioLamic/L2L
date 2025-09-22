@@ -173,7 +173,7 @@
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
         const testData = [
-            { Exame: 'Exame Sangue Completo', Prazo: '3 dias', Valor: 150 },
+            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null },
         ];
         let examsData = {};
         let deferredPrompt = null;
@@ -194,6 +194,7 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            // Check if app is installed (works on both mobile and desktop)
             checkAppInstalled();
         });
 
@@ -202,14 +203,14 @@
                 const relatedApps = await navigator.getInstalledRelatedApps();
                 if (relatedApps.length === 0) {
                     document.getElementById('installPrompt').style.display = 'block';
-                    console.log('Nenhum aplicativo relacionado instalado, exibindo prompt');
+                    console.log('Nenhum aplicativo relacionado instalado, exibindo prompt (móvel ou desktop)');
                 } else {
                     console.log('Aplicativo já instalado, ocultando prompt');
                 }
             } else {
-                // Fallback para navegadores que não suportam getInstalledRelatedApps
+                // Fallback for browsers that don't support getInstalledRelatedApps
                 document.getElementById('installPrompt').style.display = 'block';
-                console.log('getInstalledRelatedApps não suportado, exibindo prompt');
+                console.log('getInstalledRelatedApps não suportado, exibindo prompt (móvel ou desktop)');
             }
         }
 
