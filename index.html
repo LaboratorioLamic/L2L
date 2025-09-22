@@ -163,7 +163,7 @@
     </div>
     <div class="install-prompt" id="installPrompt" style="display: none;">
         <button class="close-button" id="closePrompt">X</button>
-        <p>Deseja instalar página como aplicativo?</p>
+        <p id="installMessage">Deseja instalar esta página como aplicativo?</p>
         <button class="install-button" id="installButton">Instalar</button>
     </div>
     <table id="comparisonTable">
@@ -177,7 +177,9 @@
         ];
         let examsData = {};
         let deferredPrompt = null;
+        let isDesktop = !/Mobi|Android/i.test(navigator.userAgent);
 
+        // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
@@ -191,13 +193,34 @@
             });
         }
 
+        // Handle beforeinstallprompt event
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             document.getElementById('installPrompt').style.display = 'block';
             console.log('Evento beforeinstallprompt disparado');
+            if (isDesktop) {
+                document.getElementById('installMessage').textContent =
+                    'Deseja instalar esta página como aplicativo? Clique no ícone de instalação na barra de endereço do navegador.';
+            }
         });
 
+        // Fallback for desktop browsers
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (!deferredPrompt && isDesktop) {
+                    const isChromeOrEdge = /Chrome|Edg/i.test(navigator.userAgent);
+                    if (isChromeOrEdge) {
+                        document.getElementById('installPrompt').style.display = 'block';
+                        document.getElementById('installMessage').textContent =
+                            'Para instalar como aplicativo, clique no ícone de instalação (+) na barra de endereço do navegador.';
+                        document.getElementById('installButton').style.display = 'none'; // Hide install button on desktop
+                    }
+                }
+            }, 3000); // Show after 3 seconds if no prompt
+        });
+
+        // Handle install button click
         document.getElementById('installButton').addEventListener('click', () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -213,14 +236,18 @@
             }
         });
 
+        // Close prompt
         document.getElementById('closePrompt').addEventListener('click', () => {
             document.getElementById('installPrompt').style.display = 'none';
         });
 
+        // Handle app installed
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
+            document.getElementById('installPrompt').style.display = 'none';
         });
 
+        // Load data from Google Sheets
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
             let data;
@@ -259,7 +286,7 @@
             exams.forEach(exame => {
                 const row = document.createElement('tr');
                 const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A' };
-                const displayValor = data.valor !== 'N/A' ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
+                const displayValor = data.valor !== 'N/A' && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
                 row.innerHTML = `<td>${exame}</td><td>${data.prazo}</td><td>${displayValor}</td>`;
                 body.appendChild(row);
             });
