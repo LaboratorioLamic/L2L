@@ -129,6 +129,79 @@
             font-size: 20px;
             cursor: pointer;
         }
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 2px solid red;
+        }
+        .login-box.shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .login-box select, .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .login-box button {
+            background-color: #1a2b5f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-box button:hover {
+            background-color: #2c3e50;
+        }
+        .login-box button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+        .timer-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .timer-progress {
+            height: 100%;
+            background: #1a2b5f;
+            width: 0;
+            transition: width 1s linear;
+        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -151,6 +224,20 @@
     </style>
 </head>
 <body>
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box" id="loginBox">
+            <h2>Login</h2>
+            <select id="userSelect">
+                <option value="">Selecione um usuário</option>
+            </select>
+            <input type="password" id="passwordInput" placeholder="Digite sua senha">
+            <button id="loginButton">Entrar</button>
+            <p class="error-message" id="errorMessage">Senha incorreta. Tentativas restantes: <span id="attemptsLeft">5</span></p>
+            <div class="timer-bar" id="timerBar" style="display: none;">
+                <div class="timer-progress" id="timerProgress"></div>
+            </div>
+        </div>
+    </div>
     <div class="logo-container">
         <img src="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/logo.png" alt="Logo">
     </div>
@@ -158,7 +245,7 @@
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
     </div>
-    <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <i class="fas fa-spinner loading-icon"></i>
     </div>
     <div class="install-prompt" id="installPrompt" style="display: none;">
@@ -172,12 +259,101 @@
     </table>
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
+        const usersUrl = '/info.json';
         const testData = [
             { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null },
         ];
         let examsData = {};
         let deferredPrompt = null;
         let isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+        let loginAttempts = 0;
+        let lockoutTime = 5;
+        let isLocked = false;
+        let users = [];
+
+        // Hide main content initially
+        document.querySelector('h1').style.display = 'none';
+        document.querySelector('.search-container').style.display = 'none';
+        document.querySelector('.logo-container').style.display = 'none';
+        document.getElementById('comparisonTable').style.display = 'none';
+
+        // Load users from info.json
+        async function loadUsers() {
+            try {
+                const response = await fetch(usersUrl);
+                if (response.ok) {
+                    users = await response.json();
+                    const userSelect = document.getElementById('userSelect');
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.user;
+                        option.textContent = user.user;
+                        userSelect.appendChild(option);
+                    });
+                } else {
+                    throw new Error('Falha ao carregar usuários');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+                document.getElementById('errorMessage').textContent = 'Erro ao carregar usuários. Tente novamente.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        // Handle login
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            if (isLocked) return;
+
+            const selectedUser = document.getElementById('userSelect').value;
+            const password = document.getElementById('passwordInput').value;
+            const user = users.find(u => u.user === selectedUser);
+
+            if (user && user.password === password) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.querySelector('h1').style.display = 'block';
+                document.querySelector('.search-container').style.display = 'block';
+                document.querySelector('.logo-container').style.display = 'block';
+                document.getElementById('comparisonTable').style.display = 'table';
+                loginAttempts = 0;
+                lockoutTime = 5;
+                loadData();
+            } else {
+                loginAttempts++;
+                const attemptsLeft = 5 - (loginAttempts % 5);
+                document.getElementById('loginBox').classList.add('shake');
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('attemptsLeft').textContent = attemptsLeft;
+
+                setTimeout(() => {
+                    document.getElementById('loginBox').classList.remove('shake');
+                }, 500);
+
+                if (loginAttempts % 5 === 0) {
+                    isLocked = true;
+                    document.getElementById('loginButton').disabled = true;
+                    document.getElementById('passwordInput').disabled = true;
+                    document.getElementById('timerBar').style.display = 'block';
+                    document.getElementById('timerProgress').style.width = '0%';
+
+                    let timeLeft = lockoutTime;
+                    const interval = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('timerProgress').style.width = `${((lockoutTime - timeLeft) / lockoutTime) * 100}%`;
+                        if (timeLeft <= 0) {
+                            clearInterval(interval);
+                            isLocked = false;
+                            document.getElementById('loginButton').disabled = false;
+                            document.getElementById('passwordInput').disabled = false;
+                            document.getElementById('timerBar').style.display = 'none';
+                            document.getElementById('errorMessage').style.display = 'none';
+                            if (loginAttempts % 15 === 0) {
+                                lockoutTime += 5;
+                            }
+                        }
+                    }, 1000);
+                }
+            }
+        });
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
@@ -207,6 +383,7 @@
 
         // Fallback for desktop browsers
         window.addEventListener('load', () => {
+            loadUsers();
             setTimeout(() => {
                 if (!deferredPrompt && isDesktop) {
                     const isChromeOrEdge = /Chrome|Edg/i.test(navigator.userAgent);
@@ -214,10 +391,10 @@
                         document.getElementById('installPrompt').style.display = 'block';
                         document.getElementById('installMessage').textContent =
                             'Para instalar como aplicativo, clique no ícone de instalação (+) na barra de endereço do navegador.';
-                        document.getElementById('installButton').style.display = 'none'; // Hide install button on desktop
+                        document.getElementById('installButton').style.display = 'none';
                     }
                 }
-            }, 3000); // Show after 3 seconds if no prompt
+            }, 3000);
         });
 
         // Handle install button click
@@ -303,10 +480,6 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
-
-        window.onload = function() {
-            loadData();
-        };
     </script>
 </body>
 </html>
