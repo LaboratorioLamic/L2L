@@ -177,7 +177,7 @@
         ];
         let examsData = {};
         let deferredPrompt = null;
-        let isDesktop = !/Mobi|Android/i.test(navigator.userAgent);
+        let isDesktop = window.matchMedia("(min-width: 1024px)").matches;
 
         // Register Service Worker
         if ('serviceWorker' in navigator) {
