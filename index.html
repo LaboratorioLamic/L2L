@@ -23,12 +23,14 @@
         h1 {
             color: #2c3e50;
             margin-bottom: 10px;
-            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-size: clamp(0.5rem, 3vw, 1rem);
+            font-weight: normal;
         }
         #userName {
-            font-size: clamp(0.7rem, 5vw, 2rem);
+            font-size: clamp(1.5rem, 5vw, 2rem);
             color: #2c3e50;
             margin-bottom: 10px;
+            font-weight: bold;
         }
         .search-container {
             position: relative;
@@ -258,7 +260,7 @@
         <img src="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/logo.png" alt="Logo">
     </div>
     <p id="userName" style="display: none;">Usuário logado</p>
-    <h1>Exames Apoiados</h1>
+    <h1>Lista de Exames Apoiados</h1>
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
     </div>
@@ -287,7 +289,6 @@
         ];
         let examsData = {};
         let deferredPrompt = null;
-        let isDesktop = window.matchMedia("(min-width: 1024px)").matches;
         let loginAttempts = 0;
         let lockoutTime = 10;
         let isLocked = false;
@@ -302,6 +303,14 @@
 
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
+
+        // Function to show install prompt if available
+        function showInstallPrompt() {
+            if (deferredPrompt) {
+                document.getElementById('installPrompt').style.display = 'flex';
+                console.log('Prompt de instalação exibido após login');
+            }
+        }
 
         // Load users from info.json with fallback
         async function loadUsers() {
@@ -348,6 +357,10 @@
                 document.getElementById('comparisonTable').style.display = 'table';
                 loginAttempts = 0;
                 lockoutTime = 10;
+                
+                // Show install prompt after successful login if available
+                showInstallPrompt();
+                
                 loadData();
             } else {
                 loginAttempts++;
@@ -385,6 +398,13 @@
             }
         });
 
+        // Allow Enter key to trigger login in password input
+        document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !isLocked) {
+                document.getElementById('loginButton').click();
+            }
+        });
+
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -399,27 +419,15 @@
             });
         }
 
-        // Handle beforeinstallprompt event
+        // Handle beforeinstallprompt event - store but do not show immediately
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('installPrompt').style.display = 'block';
-            console.log('Evento beforeinstallprompt disparado');
+            console.log('Evento beforeinstallprompt disparado e armazenado');
+            // Only show after login via showInstallPrompt()
         });
 
-        // Fallback for desktop browsers
-        window.addEventListener('load', () => {
-            loadUsers();
-            setTimeout(() => {
-                if (!deferredPrompt && isDesktop) {
-                    const isChromeOrEdge = /Chrome|Edg/i.test(navigator.userAgent);
-                    if (isChromeOrEdge) {
-                        document.getElementById('installPrompt').style.display = 'block';
-                        document.getElementById('installButton').style.display = 'block';
-                    }
-                }
-            }, 3000);
-        });
+        // Fallback for desktop browsers - removed empty setTimeout
 
         // Handle install button click
         document.getElementById('installButton').addEventListener('click', () => {
@@ -437,15 +445,18 @@
             }
         });
 
-        // Close prompt
+        // Close prompt - clear deferredPrompt to prevent re-showing
         document.getElementById('closePrompt').addEventListener('click', () => {
             document.getElementById('installPrompt').style.display = 'none';
+            deferredPrompt = null; // Clear to avoid re-showing
+            console.log('Prompt de instalação fechado e limpo');
         });
 
         // Handle app installed
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
             document.getElementById('installPrompt').style.display = 'none';
+            deferredPrompt = null;
         });
 
         // Load data from Google Sheets
@@ -504,6 +515,11 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            loadUsers();
+        });
     </script>
 </body>
 </html>
