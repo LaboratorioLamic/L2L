@@ -1,40 +1,44 @@
 {
-    "users": [
-      {
-        "user": "Lab. Clementino Fraga",
-        "password": "1520Cf@"
-      },
-      {
-        "user": "CLIMED",
-        "password": "4440Cm@"
-      },
-      {
-        "user": "Clinica AMA",
-        "password": "1539Am@"
-      },
-      {
-        "user": "Lab. Dra. Telma",
-        "password": "3544Dt@"
-      },
-      {
-        "user": "Lab. Osvaldo Cruz",
-        "password": "1592oC@"
-      },
-      {
-        "user": "Lab. Santa Maria",
-        "password": "15125sM@"
-      },
-      {
-        "user": "LABCLINIC",
-        "password": "1553Lc@"
-      },
-      {
-        "user": "LACC",
-        "password": "1523Lc@"
-      },
-      {
-        "user": "Vidanalise",
-        "password": "5060Vn@"
-      }
-    ]
-  }
+  "users": [
+    {
+      "user": "LAMIC",
+      "password": "Lamic6530@"
+    },
+    {
+      "user": "CLIMED",
+      "password": "4440Cm@"
+    },
+    {
+      "user": "Clinica AMA",
+      "password": "1539Am@"
+    },
+    {
+      "user": "Lab. Clementino Fraga",
+      "password": "1520Cf@"
+    },
+    {
+      "user": "Lab. Dra. Telma",
+      "password": "3544Dt@"
+    },
+    {
+      "user": "Lab. Osvaldo Cruz",
+      "password": "1592oC@"
+    },
+    {
+      "user": "Lab. Santa Maria",
+      "password": "15125sM@"
+    },
+    {
+      "user": "LABCLINIC",
+      "password": "1553Lc@"
+    },
+    {
+      "user": "LACC",
+      "password": "1523Lc@"
+    },
+    {
+      "user": "Vidanalise",
+      "password": "5060Vn@"
+    }
+  ]
+}
