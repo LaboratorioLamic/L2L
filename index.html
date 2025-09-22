@@ -22,8 +22,13 @@
         }
         h1 {
             color: #2c3e50;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: clamp(1.5rem, 5vw, 2rem);
+        }
+        #userName {
+            font-size: clamp(0.7rem, 5vw, 2rem);
+            color: #2c3e50;
+            margin-bottom: 10px;
         }
         .search-container {
             position: relative;
@@ -102,6 +107,10 @@
             text-align: center;
             max-width: 300px;
             width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .install-prompt p {
             margin: 0 0 20px;
@@ -147,9 +156,9 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             text-align: center;
-            max-width: 400px;
+            max-width: 300px;
             width: 90%;
-            border: 2px solid red;
+            border: 2px solid #332a8a;
         }
         .login-box.shake {
             animation: shake 0.5s;
@@ -202,6 +211,12 @@
             width: 0;
             transition: width 1s linear;
         }
+        #waitMessage {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -231,16 +246,18 @@
                 <option value="">Selecione um usuário</option>
             </select>
             <input type="password" id="passwordInput" placeholder="Digite sua senha">
-            <button id="loginButton">Entrar</button>
-            <p class="error-message" id="errorMessage">Senha incorreta. Tentativas restantes: <span id="attemptsLeft">5</span></p>
+            <button id="loginButton" disabled>Entrar</button>
+            <p class="error-message" id="errorMessage">Senha incorreta.</p>
             <div class="timer-bar" id="timerBar" style="display: none;">
                 <div class="timer-progress" id="timerProgress"></div>
             </div>
+            <p id="waitMessage">Aguarde para tentar novamente</p>
         </div>
     </div>
     <div class="logo-container">
         <img src="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/logo.png" alt="Logo">
     </div>
+    <p id="userName" style="display: none;">Usuário logado</p>
     <h1>Exames Apoiados</h1>
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
@@ -259,45 +276,58 @@
     </table>
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
-        const usersUrl = '/info.json';
+        const usersUrl = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
         const testData = [
             { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null },
+        ];
+        // Fallback user list in case info.json fails to load
+        const fallbackUsers = [
+            { user: 'admin', password: 'admin123' },
+            { user: 'guest', password: 'guest123' }
         ];
         let examsData = {};
         let deferredPrompt = null;
         let isDesktop = window.matchMedia("(min-width: 1024px)").matches;
         let loginAttempts = 0;
-        let lockoutTime = 5;
+        let lockoutTime = 10;
         let isLocked = false;
         let users = [];
 
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
+        document.getElementById('userName').style.display = 'none';
         document.querySelector('.search-container').style.display = 'none';
         document.querySelector('.logo-container').style.display = 'none';
         document.getElementById('comparisonTable').style.display = 'none';
 
-        // Load users from info.json
+        // Disable login button initially
+        document.getElementById('loginButton').disabled = true;
+
+        // Load users from info.json with fallback
         async function loadUsers() {
             try {
-                const response = await fetch(usersUrl);
+                const response = await fetch(usersUrl, { method: 'GET' });
                 if (response.ok) {
-                    users = await response.json();
-                    const userSelect = document.getElementById('userSelect');
-                    users.forEach(user => {
-                        const option = document.createElement('option');
-                        option.value = user.user;
-                        option.textContent = user.user;
-                        userSelect.appendChild(option);
-                    });
+                    const jsonData = await response.json();
+                    users = jsonData.users || [];  // Extrai o array de "users"
+                    console.log('Usuários carregados com sucesso:', users);
                 } else {
-                    throw new Error('Falha ao carregar usuários');
+                    throw new Error(`Erro HTTP: ${response.status}`);
                 }
             } catch (error) {
-                console.error('Erro ao carregar usuários:', error);
-                document.getElementById('errorMessage').textContent = 'Erro ao carregar usuários. Tente novamente.';
-                document.getElementById('errorMessage').style.display = 'block';
+                console.warn('Falha ao carregar usuários, usando lista de fallback:', error);
+                users = fallbackUsers;
             }
+            const userSelect = document.getElementById('userSelect');
+            userSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Clear and reset
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.user;
+                option.textContent = user.user;
+                userSelect.appendChild(option);
+            });
+            // Enable login button after users are loaded
+            document.getElementById('loginButton').disabled = false;
         }
 
         // Handle login
@@ -311,28 +341,30 @@
             if (user && user.password === password) {
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.querySelector('h1').style.display = 'block';
+                document.getElementById('userName').textContent = selectedUser;
+                document.getElementById('userName').style.display = 'block';
                 document.querySelector('.search-container').style.display = 'block';
                 document.querySelector('.logo-container').style.display = 'block';
                 document.getElementById('comparisonTable').style.display = 'table';
                 loginAttempts = 0;
-                lockoutTime = 5;
+                lockoutTime = 10;
                 loadData();
             } else {
                 loginAttempts++;
-                const attemptsLeft = 5 - (loginAttempts % 5);
                 document.getElementById('loginBox').classList.add('shake');
                 document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('attemptsLeft').textContent = attemptsLeft;
+                document.getElementById('errorMessage').textContent = 'Senha incorreta.';
 
                 setTimeout(() => {
                     document.getElementById('loginBox').classList.remove('shake');
                 }, 500);
 
-                if (loginAttempts % 5 === 0) {
+                if (loginAttempts >= 5) {
                     isLocked = true;
                     document.getElementById('loginButton').disabled = true;
                     document.getElementById('passwordInput').disabled = true;
                     document.getElementById('timerBar').style.display = 'block';
+                    document.getElementById('waitMessage').style.display = 'block';
                     document.getElementById('timerProgress').style.width = '0%';
 
                     let timeLeft = lockoutTime;
@@ -345,10 +377,8 @@
                             document.getElementById('loginButton').disabled = false;
                             document.getElementById('passwordInput').disabled = false;
                             document.getElementById('timerBar').style.display = 'none';
+                            document.getElementById('waitMessage').style.display = 'none';
                             document.getElementById('errorMessage').style.display = 'none';
-                            if (loginAttempts % 15 === 0) {
-                                lockoutTime += 5;
-                            }
                         }
                     }, 1000);
                 }
@@ -375,10 +405,6 @@
             deferredPrompt = e;
             document.getElementById('installPrompt').style.display = 'block';
             console.log('Evento beforeinstallprompt disparado');
-            if (isDesktop) {
-                document.getElementById('installMessage').textContent =
-                    'Deseja instalar esta página como aplicativo? Clique no ícone de instalação na barra de endereço do navegador.';
-            }
         });
 
         // Fallback for desktop browsers
@@ -389,9 +415,7 @@
                     const isChromeOrEdge = /Chrome|Edg/i.test(navigator.userAgent);
                     if (isChromeOrEdge) {
                         document.getElementById('installPrompt').style.display = 'block';
-                        document.getElementById('installMessage').textContent =
-                            'Para instalar como aplicativo, clique no ícone de instalação (+) na barra de endereço do navegador.';
-                        document.getElementById('installButton').style.display = 'none';
+                        document.getElementById('installButton').style.display = 'block';
                     }
                 }
             }, 3000);
