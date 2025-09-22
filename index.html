@@ -130,6 +130,10 @@
         .install-button:hover {
             background-color: #2c3e50;
         }
+        .install-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
         .close-button {
             position: absolute;
             top: 10px;
@@ -306,9 +310,14 @@
 
         // Function to show install prompt if available
         function showInstallPrompt() {
+            document.getElementById('installPrompt').style.display = 'flex';
             if (deferredPrompt) {
-                document.getElementById('installPrompt').style.display = 'flex';
+                document.getElementById('installButton').disabled = false;
                 console.log('Prompt de instalação exibido após login');
+            } else {
+                document.getElementById('installButton').textContent = 'Instalação não disponível';
+                document.getElementById('installButton').disabled = true;
+                console.log('Prompt de instalação exibido, mas instalação não suportada neste navegador');
             }
         }
 
@@ -358,7 +367,7 @@
                 loginAttempts = 0;
                 lockoutTime = 10;
                 
-                // Show install prompt after successful login if available
+                // Show install prompt after successful login
                 showInstallPrompt();
                 
                 loadData();
@@ -442,13 +451,19 @@
                     deferredPrompt = null;
                     document.getElementById('installPrompt').style.display = 'none';
                 });
+            } else {
+                console.log('Instalação não suportada neste navegador');
+                // Opcionalmente, fechar o prompt ou mostrar uma mensagem
+                document.getElementById('installPrompt').style.display = 'none';
             }
         });
 
         // Close prompt - clear deferredPrompt to prevent re-showing
         document.getElementById('closePrompt').addEventListener('click', () => {
             document.getElementById('installPrompt').style.display = 'none';
-            deferredPrompt = null; // Clear to avoid re-showing
+            if (deferredPrompt) {
+                deferredPrompt = null; // Clear to avoid re-showing
+            }
             console.log('Prompt de instalação fechado e limpo');
         });
 
