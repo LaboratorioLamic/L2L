@@ -194,9 +194,24 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('installPrompt').style.display = 'block';
-            console.log('Evento beforeinstallprompt disparado');
+            checkAppInstalled();
         });
+
+        async function checkAppInstalled() {
+            if ('getInstalledRelatedApps' in navigator) {
+                const relatedApps = await navigator.getInstalledRelatedApps();
+                if (relatedApps.length === 0) {
+                    document.getElementById('installPrompt').style.display = 'block';
+                    console.log('Nenhum aplicativo relacionado instalado, exibindo prompt');
+                } else {
+                    console.log('Aplicativo já instalado, ocultando prompt');
+                }
+            } else {
+                // Fallback para navegadores que não suportam getInstalledRelatedApps
+                document.getElementById('installPrompt').style.display = 'block';
+                console.log('getInstalledRelatedApps não suportado, exibindo prompt');
+            }
+        }
 
         document.getElementById('installButton').addEventListener('click', () => {
             if (deferredPrompt) {
@@ -219,6 +234,7 @@
 
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
+            document.getElementById('installPrompt').style.display = 'none';
         });
 
         async function loadData() {
