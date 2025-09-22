@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#001f3f">
     <title>Lamic Apoiados</title>
     <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png" type="image/png">
-    <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png">
+    <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/main/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
@@ -86,45 +88,70 @@
             width: 200px;
             height: auto;
         }
-        .install-prompt {
+        .install-banner {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            z-index: 1000;
+            bottom: 70px; /* Acima da tab-bar */
+            left: 10px;
+            right: 10px;
+            background-color: #ffffff;
+            color: #001f3f;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 50;
+            animation: slideUp 0.5s ease-out;
+            font-size: 0.9em;
             text-align: center;
-            max-width: 300px;
+            transition: bottom 0.3s ease;
         }
-        .install-prompt p {
-            margin: 0 0 20px;
-            font-size: 16px;
-            color: #333;
+        
+        .install-banner.minimized {
+            bottom: 10px;
         }
-        .install-prompt button {
-            padding: 10px 20px;
+        
+        .install-banner.show {
+            display: flex;
+        }
+        
+        .install-banner p {
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .install-banner button {
+            background-color: #001f3f;
+            color: #ffffff;
+            padding: 8px 16px;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
             cursor: pointer;
-            font-size: 14px;
-            margin: 0 5px;
+            transition: background-color 0.3s ease;
         }
-        .install-btn {
-            background-color: #1a2b5f;
-            color: white;
+        
+        .install-banner button:hover {
+            background-color: #007bff;
         }
-        .install-btn:hover {
-            background-color: #0e1a3b;
+        
+        .install-banner .close-install {
+            background: none;
+            border: none;
+            color: #001f3f;
+            font-size: 1.2em;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
-        .close-btn {
-            background-color: #dc3545;
-            color: white;
-        }
-        .close-btn:hover {
-            background-color: #a71d2a;
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
         @media (max-width: 768px) {
             table {
@@ -144,8 +171,19 @@
             .logo-container img {
                 width: 200px;
             }
-            .install-prompt {
-                max-width: 90%;
+            .install-banner {
+                bottom: 60px; /* Ajustado para telas menores */
+                padding: 10px;
+                font-size: 0.8em;
+            }
+            
+            .install-banner.minimized {
+                bottom: 10px;
+            }
+            
+            .install-banner button {
+                padding: 6px 12px;
+                font-size: 0.8em;
             }
         }
     </style>
@@ -154,7 +192,7 @@
     <div class="logo-container">
         <img src="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/logo.png" alt="Logo">
     </div>
-    <h1>Lista de Exames Apoiados</h1>
+    <h1>Exames Apoiados</h1>
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
     </div>
@@ -165,11 +203,6 @@
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
     </table>
-    <div class="install-prompt" id="installPrompt" style="display: none;">
-        <p>Deseja instalar este site como um aplicativo?</p>
-        <button class="install-btn" id="installBtn">Instalar</button>
-        <button class="close-btn" id="closePrompt">Fechar</button>
-    </div>
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
         const testData = [
@@ -181,7 +214,7 @@
         // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/service-worker.js')
+                navigator.serviceWorker.register('https://raw.githubusercontent.com/LaboratorioLamic/L2L/main/service-worker.js', { scope: '/' })
                     .then(registration => {
                         console.log('Service Worker registrado com sucesso:', registration);
                     })
@@ -191,57 +224,62 @@
             });
         }
 
-        // Exibir o prompt de instalação após interação do usuário
-        window.addEventListener('load', () => {
-            // Mostrar o prompt apenas após alguma interação do usuário
-            document.body.addEventListener('click', () => {
-                if (!localStorage.getItem('installPromptShown')) {
-                    setTimeout(() => {
-                        document.getElementById('installPrompt').style.display = 'block';
-                        localStorage.setItem('installPromptShown', 'true');
-                    }, 2000); // Atraso de 2 segundos para garantir interação
-                }
-            }, { once: true });
-        });
-
         // Capturar evento de instalação
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('Evento beforeinstallprompt disparado');
-            document.getElementById('installBtn').disabled = false; // Habilitar botão de instalação
-        });
-
-        // Lógica do botão de instalação
-        document.getElementById('installBtn')?.addEventListener('click', () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('Usuário aceitou instalar o aplicativo');
-                    } else {
-                        console.log('Usuário recusou a instalação');
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('installPrompt').style.display = 'none';
-                });
-            } else {
-                console.log('Instalação não disponível no momento');
-                alert('A instalação não está disponível. Verifique se está usando HTTPS e se o Service Worker está registrado.');
-                document.getElementById('installPrompt').style.display = 'none';
-            }
-        });
-
-        // Fechar o prompt de instalação
-        document.getElementById('closePrompt')?.addEventListener('click', () => {
-            document.getElementById('installPrompt').style.display = 'none';
         });
 
         // Verificar se o aplicativo já está instalado
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
-            document.getElementById('installPrompt').style.display = 'none';
+            localStorage.setItem('appInstalled', 'true');
         });
+
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        function showInstallBanner() {
+            if (!isMobileDevice || localStorage.getItem('installPromptDismissed') || localStorage.getItem('appInstalled')) {
+                return;
+            }
+        
+            const banner = document.createElement('div');
+            banner.className = 'install-banner';
+            banner.innerHTML = `
+                <p>Instale nosso aplicativo para uma melhor experiência!</p>
+                <button id="install-app-button">Instalar</button>
+                <button class="close-install"><i class="fas fa-times"></i></button>
+            `;
+            document.body.appendChild(banner);
+        
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 1000); // Atraso para exibir após o carregamento
+        
+            document.getElementById('install-app-button').addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                            localStorage.setItem('appInstalled', 'true');
+                        } else {
+                            console.log('User dismissed the install prompt');
+                        }
+                        deferredPrompt = null;
+                        banner.classList.remove('show');
+                        setTimeout(() => banner.remove(), 500);
+                    });
+                }
+            });
+        
+            banner.querySelector('.close-install').addEventListener('click', () => {
+                localStorage.setItem('installPromptDismissed', 'true');
+                banner.classList.remove('show');
+                setTimeout(() => banner.remove(), 500);
+            });
+        }
 
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -298,7 +336,11 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
-        loadData();
+
+        window.onload = function() {
+            loadData();
+            showInstallBanner();
+        };
     </script>
 </body>
 </html>
