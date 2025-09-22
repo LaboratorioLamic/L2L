@@ -19,5 +19,5 @@
     }
   ],
   "description": "Lista de valores dos exames apoiados.",
-  "scope": "/",
+  "scope": "/"
 }
