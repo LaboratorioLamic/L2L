@@ -88,64 +88,6 @@
             width: 200px;
             height: auto;
         }
-        .install-banner {
-            position: fixed;
-            bottom: 70px;
-            left: 10px;
-            right: 10px;
-            background-color: #ffffff;
-            color: #001f3f;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            z-index: 50;
-            animation: slideUp 0.5s ease-out;
-            font-size: 0.9em;
-            text-align: center;
-            transition: bottom 0.3s ease;
-        }
-        .install-banner.minimized {
-            bottom: 10px;
-        }
-        .install-banner.show {
-            display: flex;
-        }
-        .install-banner p {
-            margin: 0;
-            font-weight: 500;
-        }
-        .install-banner button {
-            background-color: #001f3f;
-            color: #ffffff;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            font-size: 0.9em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .install-banner button:hover {
-            background-color: #007bff;
-        }
-        .install-banner .close-install {
-            background: none;
-            border: none;
-            color: #001f3f;
-            font-size: 1.2em;
-            cursor: pointer;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -163,18 +105,6 @@
             }
             .logo-container img {
                 width: 200px;
-            }
-            .install-banner {
-                bottom: 60px;
-                padding: 10px;
-                font-size: 0.8em;
-            }
-            .install-banner.minimized {
-                bottom: 10px;
-            }
-            .install-banner button {
-                padding: 6px 12px;
-                font-size: 0.8em;
             }
         }
     </style>
@@ -195,15 +125,14 @@
         <tbody id="tableBody"></tbody>
     </table>
     <script>
+        // URL for fetching data from Google Sheets
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
+        // Test data as fallback
         const testData = [
             { Exame: 'Exame Sangue Completo', Prazo: '3 dias', Valor: 150 },
         ];
         let examsData = {};
-        let deferredPrompt = null;
-        let isInstallSupported = false;
 
-        // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('https://raw.githubusercontent.com/LaboratorioLamic/L2L/main/service-worker.js', { scope: '/' })
@@ -217,74 +146,19 @@
             });
         }
 
-        // Capturar evento de instalação
+
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            isInstallSupported = true;
+            e.preventDefault(); // Prevent default browser prompt
+            window.deferredPrompt = e;
             console.log('Evento beforeinstallprompt disparado');
-            showInstallBanner(); // Mostrar banner somente após o evento
         });
 
-        // Verificar se o aplicativo já está instalado
+        // Log when the app is installed
         window.addEventListener('appinstalled', () => {
             console.log('Aplicativo instalado com sucesso');
-            localStorage.setItem('appInstalled', 'true');
-            const banner = document.querySelector('.install-banner');
-            if (banner) {
-                banner.classList.remove('show');
-                setTimeout(() => banner.remove(), 500);
-            }
         });
 
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        function showInstallBanner() {
-            if (!isMobileDevice || localStorage.getItem('installPromptDismissed') || localStorage.getItem('appInstalled') || !isInstallSupported) {
-                console.log('Banner não exibido: dispositivo não móvel, prompt recusado, app instalado ou instalação não suportada');
-                return;
-            }
-
-            const banner = document.createElement('div');
-            banner.className = 'install-banner';
-            banner.innerHTML = `
-                <p>Instale nosso aplicativo para uma melhor experiência!</p>
-                <button id="install-app-button">Instalar</button>
-                <button class="close-install"><i class="fas fa-times"></i></button>
-            `;
-            document.body.appendChild(banner);
-
-            setTimeout(() => {
-                banner.classList.add('show');
-            }, 1000);
-
-            document.getElementById('install-app-button').addEventListener('click', () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('Usuário aceitou o prompt de instalação');
-                            localStorage.setItem('appInstalled', 'true');
-                        } else {
-                            console.log('Usuário recusou o prompt de instalação');
-                        }
-                        deferredPrompt = null;
-                        banner.classList.remove('show');
-                        setTimeout(() => banner.remove(), 500);
-                    });
-                } else {
-                    console.error('Prompt de instalação não disponível');
-                    alert('A instalação não está disponível no momento. Use a opção "Adicionar à tela inicial" no menu do navegador.');
-                }
-            });
-
-            banner.querySelector('.close-install').addEventListener('click', () => {
-                localStorage.setItem('installPromptDismissed', 'true');
-                banner.classList.remove('show');
-                setTimeout(() => banner.remove(), 500);
-            });
-        }
-
+        // Load data from Google Sheets or use test data as fallback
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
             let data;
@@ -312,11 +186,13 @@
             document.getElementById('loadingOverlay').style.display = 'none';
         }
 
+        // Render table header
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
             header.innerHTML = '<tr><th>Exame</th><th>Prazo</th><th>Valor</th></tr>';
         }
 
+        // Render table body
         function renderTable(exams) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
@@ -329,6 +205,7 @@
             });
         }
 
+        // Filter exams based on search input
         function filterExams(query) {
             const matchingExams = Object.keys(examsData).filter(exame =>
                 exame.toLowerCase().includes(query.toLowerCase())
@@ -339,8 +216,10 @@
             }
         }
 
+        // Add search input event listener
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
 
+        // Load data on page load
         window.onload = function() {
             loadData();
         };
