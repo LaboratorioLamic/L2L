@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#001f3f">
     <title>Lamic Apoiados</title>
-    <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/icon.png">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png">
+    <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto Slab', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7fa;
             color: #333;
             margin: 0;
@@ -46,6 +49,30 @@
             font-size: 16px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .download-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #1a2b5f;
+            font-size: 18px;
+            z-index: 5;
+        }
+        .download-icon:hover {
+            color: #2c3e50;
+        }
+        .loading-download {
+            position: absolute;
+            right: 15px;
+            top: 30%;
+            transform: translateY(-50%);
+            color: #1a2b5f;
+            font-size: 18px;
+            z-index: 5;
+            display: none;
+            animation: spin 1s linear infinite;
+        }
         table {
             width: 100%;
             max-width: 1200px;
@@ -60,6 +87,7 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            word-wrap: break-word;
         }
         th {
             background-color: #1a2b5f;
@@ -175,41 +203,6 @@
             margin-top: 10px;
             display: none;
         }
-        .install-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1001;
-        }
-        .install-box {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            text-align: center;
-            max-width: 300px;
-            width: 90%;
-            border: 2px solid #332a8a;
-        }
-        .install-box button {
-            background-color: #1a2b5f;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-        .install-box button:hover {
-            background-color: #2c3e50;
-        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -227,6 +220,82 @@
             }
             .logo-container img {
                 width: 200px;
+            }
+        }
+
+        /* CSS for Install Banner (adapted from previous) */
+        .install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            background-color: #f4f7fa;
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 50;
+            animation: slideUp 0.5s ease-out;
+            font-size: 0.9em;
+            text-align: center;
+            transition: bottom 0.3s ease;
+        }
+        
+        .install-banner.show {
+            display: flex;
+        }
+        
+        .install-banner p {
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .install-banner button {
+            background-color: #1a2b5f;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .install-banner button:hover {
+            background-color: #2c3e50;
+        }
+        
+        .install-banner .close-install {
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 1.2em;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .install-banner {
+                bottom: 10px;
+                padding: 10px;
+                font-size: 0.8em;
+            }
+            
+            .install-banner button {
+                padding: 6px 12px;
+                font-size: 0.8em;
             }
         }
     </style>
@@ -247,20 +316,15 @@
             <p id="waitMessage">Aguarde para tentar novamente</p>
         </div>
     </div>
-    <div class="install-overlay" id="installOverlay">
-        <div class="install-box">
-            <h2>Instalar o App?</h2>
-            <p>Adicione este app à sua tela inicial para acesso rápido no Chrome.</p>
-            <button id="installButton">Instalar</button>
-        </div>
-    </div>
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/LaboratorioLamic/Dados/refs/heads/main/assents/logo.png" alt="Logo">
+        <img src="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/logo.png" alt="Logo" id="mainLogo">
     </div>
     <p id="userName" style="display: none;">Usuário logado</p>
     <h1>Lista de Exames Apoiados</h1>
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
+        <i class="fas fa-download download-icon" id="downloadIcon" style="display: none;"></i>
+        <i class="fas fa-spinner loading-download" id="loadingDownloadIcon"></i>
     </div>
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <i class="fas fa-spinner loading-icon"></i>
@@ -269,19 +333,26 @@
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
     </table>
+
+    <!-- Install Banner -->
+    <div id="install-banner" class="install-banner">
+        <p>Instale nosso aplicativo para uma melhor experiência!</p>
+        <button id="install-app-button">Instalar</button>
+        <button class="close-install"><i class="fas fa-times"></i></button>
+    </div>
+
     <script>
-        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
-        const usersUrl = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
+        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbxQa5GD4cI6SjaPtI7nFXc8ueDQBd6RhvgCmbWXk5BvX_xOeAkYYrWLOjx0l_Xp0munjg/exec';
+        const infodata = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
         const testData = [
-            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null },
+            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base' },
         ];
-        // Fallback user list in case info.json fails to load
         let examsData = {};
         let loginAttempts = 0;
         let lockoutTime = 10;
         let isLocked = false;
         let users = [];
-        let deferredPrompt;
+        let currentUser = '';
 
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
@@ -293,59 +364,10 @@
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
 
-        // NOVO: Registro do Service Worker (essencial para PWA instalável)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then((registration) => {
-                        console.log('SW registrado com sucesso:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.error('Falha no registro do SW:', error);
-                    });
-            });
-        }
-
-        // PWA Install Prompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('Prompt de instalação capturado');  // Para debug
-        });
-
-        window.addEventListener('appinstalled', () => {
-            deferredPrompt = null;
-            document.getElementById('installOverlay').style.display = 'none';
-            console.log('App instalado');
-        });
-
-        document.getElementById('installButton').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('Usuário aceitou instalação');
-                } else {
-                    console.log('Usuário recusou instalação');
-                }
-                deferredPrompt = null;
-                document.getElementById('installOverlay').style.display = 'none';
-            }
-        });
-
-        function showInstallPrompt() {
-            // Mostra a janela de instalação após login, se prompt disponível e não mostrado antes
-            if (deferredPrompt && !localStorage.getItem('installPromptShown')) {
-                document.getElementById('installOverlay').style.display = 'flex';
-                localStorage.setItem('installPromptShown', 'true');
-                console.log('Janela de instalação mostrada');
-            }
-        }
-
         // Load users from info.json with fallback
-        async function loadUsers() {
+        async function info() {
             try {
-                const response = await fetch(usersUrl, { method: 'GET' });
+                const response = await fetch(infodata, { method: 'GET' });
                 if (response.ok) {
                     const jsonData = await response.json();
                     users = jsonData.users || [];  // Extrai o array de "users"
@@ -376,6 +398,7 @@
             const user = users.find(u => u.user === selectedUser);
 
             if (user && user.password === password) {
+                currentUser = selectedUser;
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.querySelector('h1').style.display = 'block';
                 document.getElementById('userName').textContent = selectedUser;
@@ -383,11 +406,10 @@
                 document.querySelector('.search-container').style.display = 'block';
                 document.querySelector('.logo-container').style.display = 'block';
                 document.getElementById('comparisonTable').style.display = 'table';
+                document.getElementById('downloadIcon').style.display = 'block';
                 loginAttempts = 0;
                 lockoutTime = 10;
                 
-                // AJUSTADO: Chama showInstallPrompt() após login bem-sucedido
-                showInstallPrompt();
                 loadData();
             } else {
                 loginAttempts++;
@@ -432,6 +454,110 @@
             }
         });
 
+        // Download PDF function (async)
+        async function downloadPDF() {
+            // Show loading animation
+            document.getElementById('downloadIcon').style.display = 'none';
+            document.getElementById('loadingDownloadIcon').style.display = 'block';
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const logoUrl = document.getElementById('mainLogo').src;
+            const userName = document.getElementById('userName').textContent;
+            const title = document.querySelector('h1').textContent;
+            let startY = 20;
+
+            // Load and add logo with proper aspect ratio
+            try {
+                const logoImg = new Image();
+                logoImg.crossOrigin = "anonymous";
+                logoImg.src = logoUrl;
+
+                await new Promise((resolve, reject) => {
+                    if (logoImg.complete) {
+                        resolve();
+                    } else {
+                        logoImg.onload = () => resolve();
+                        logoImg.onerror = () => reject(new Error('Failed to load logo'));
+                    }
+                });
+
+                const aspectRatio = logoImg.naturalHeight / logoImg.naturalWidth;
+                const imgWidth = 60; // mm
+                const imgHeight = imgWidth * aspectRatio;
+
+                // Create canvas to get base64
+                const canvas = document.createElement('canvas');
+                canvas.width = logoImg.naturalWidth;
+                canvas.height = logoImg.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(logoImg, 0, 0);
+                const imgData = canvas.toDataURL('image/png');
+
+                // Add to PDF
+                const x = (210 - imgWidth) / 2; // Center on A4 width (210mm)
+                doc.addImage(imgData, 'PNG', x, 10, imgWidth, imgHeight);
+                startY = 10 + imgHeight + 10;
+            } catch (error) {
+                console.warn('Logo load failed:', error);
+                // Proceed without logo
+            }
+
+            // Add header with user name and title, matching site styles
+            doc.setDrawColor(255); // White for no border
+            doc.setTextColor(44, 62, 80); // #2c3e50
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text(userName, 105, startY, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.text(title, 105, startY + 10, { align: 'center' });
+
+            // Prepare table data (all exams, not filtered)
+            const rows = Object.keys(examsData).map(exame => {
+                const data = examsData[exame];
+                const valorStr = data.valor !== undefined && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
+                return [exame, data.prazo || 'N/A', valorStr];
+            });
+
+            // Add table using autoTable
+            doc.autoTable({
+                startY: startY + 20,
+                head: [['Exame', 'Prazo', 'Valor']],
+                body: rows,
+                theme: 'striped',
+                styles: { 
+                    fontSize: 9, 
+                    cellPadding: 4,
+                    overflow: 'linebreak',
+                    font: 'helvetica',
+                    fontStyle: 'normal'
+                },
+                columnStyles: {
+                    0: { cellWidth: 125 }, // ~66%
+                    1: { cellWidth: 32 },  // ~17%
+                    2: { cellWidth: 32 }   // ~17%
+                },
+                headStyles: { 
+                    fillColor: [26, 43, 95], // #1a2b5f
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                }
+            });
+
+            // Save PDF
+            doc.save('lista_exames_apoiados.pdf');
+
+            // Hide loading animation
+            document.getElementById('loadingDownloadIcon').style.display = 'none';
+            document.getElementById('downloadIcon').style.display = 'block';
+        }
+
+        // Add event listener to download icon
+        document.getElementById('downloadIcon').addEventListener('click', downloadPDF);
+
         // Load data from Google Sheets
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -447,14 +573,37 @@
                 console.warn('Usando dados de teste:', error);
                 data = testData;
             }
-            data.forEach(row => {
+
+            // Filtrar exames da tabela do usuário (prioridade)
+            const userExams = data.filter(row => row.Tabela === currentUser);
+            // Filtrar exames da tabela base
+            const baseExams = data.filter(row => row.Tabela === "Laboratório LAMIC");
+
+            // Limpar dados anteriores
+            examsData = {};
+
+            // Adicionar exames do usuário primeiro (prioridade)
+            userExams.forEach(row => {
                 const exame = row.Exame;
                 const prazo = row.Prazo;
                 const valor = parseFloat(row.Valor);
-                if (!examsData[exame]) {
+                if (exame && !isNaN(valor)) {
                     examsData[exame] = { prazo, valor };
                 }
             });
+
+            // Adicionar exames da base apenas se não existirem (evitar duplicatas)
+            baseExams.forEach(row => {
+                const exame = row.Exame;
+                if (exame && !(exame in examsData)) {
+                    const prazo = row.Prazo;
+                    const valor = parseFloat(row.Valor);
+                    if (!isNaN(valor)) {
+                        examsData[exame] = { prazo, valor };
+                    }
+                }
+            });
+
             renderTableHeader();
             renderTable(Object.keys(examsData));
             document.getElementById('loadingOverlay').style.display = 'none';
@@ -489,9 +638,61 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
 
+        // PWA Install Functionality
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Install prompt is ready to be triggered');
+        });
+
+        function showInstallBanner() {
+            if (localStorage.getItem('installPromptDismissed') || localStorage.getItem('appInstalled')) {
+                return;
+            }
+
+            const banner = document.getElementById('install-banner');
+
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 1000);
+
+            document.getElementById('install-app-button').addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                            localStorage.setItem('appInstalled', 'true');
+                        } else {
+                            console.log('User dismissed the install prompt');
+                        }
+                        deferredPrompt = null;
+                        banner.classList.remove('show');
+                    });
+                }
+            });
+
+            document.querySelector('.close-install').addEventListener('click', () => {
+                localStorage.setItem('installPromptDismissed', 'true');
+                banner.classList.remove('show');
+            });
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/service-worker.js', { scope: '/' }).then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch((error) => {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+
         // Initialize on load
         window.addEventListener('load', () => {
-            loadUsers();
+            info();
+            showInstallBanner();
         });
     </script>
 </body>
