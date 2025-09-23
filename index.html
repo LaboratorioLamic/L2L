@@ -10,7 +10,8 @@
     <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
             font-family: 'Roboto Slab', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -297,55 +298,6 @@
                 font-size: 0.8em;
             }
         }
-
-        /* PDF specific styles */
-        .pdf-content {
-            position: relative;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            font-family: 'Roboto Slab', serif;
-        }
-        .pdf-logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .pdf-logo img {
-            width: 300px;
-            height: auto;
-        }
-        .pdf-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .pdf-content table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-        }
-        .pdf-content th:nth-child(1),
-        .pdf-content td:nth-child(1) {
-            width: 66%;
-        }
-        .pdf-content th:nth-child(2),
-        .pdf-content td:nth-child(2) {
-            width: 17%;
-        }
-        .pdf-content th:nth-child(3),
-        .pdf-content td:nth-child(3) {
-            width: 17%;
-        }
-        .pdf-content th, .pdf-content td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        .pdf-content th {
-            background-color: #1a2b5f;
-            color: white;
-        }
     </style>
 </head>
 <body>
@@ -502,67 +454,105 @@
             }
         });
 
-        // Download PDF function
-        function downloadPDF() {
+        // Download PDF function (async)
+        async function downloadPDF() {
             // Show loading animation
             document.getElementById('downloadIcon').style.display = 'none';
             document.getElementById('loadingDownloadIcon').style.display = 'block';
 
-            // Create temporary content for PDF
-            const pdfContent = document.createElement('div');
-            pdfContent.className = 'pdf-content';
-            pdfContent.id = 'temp-pdf-content';
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
 
-            // Add logo
-            const logoDiv = document.createElement('div');
-            logoDiv.className = 'pdf-logo';
-            const logoImg = document.createElement('img');
-            logoImg.src = document.getElementById('mainLogo').src;
-            logoImg.alt = 'Logo';
-            logoDiv.appendChild(logoImg);
-            pdfContent.appendChild(logoDiv);
+            const logoUrl = document.getElementById('mainLogo').src;
+            const userName = document.getElementById('userName').textContent;
+            const title = document.querySelector('h1').textContent;
+            let startY = 20;
 
-            // Add header with user name and title
-            const headerDiv = document.createElement('div');
-            headerDiv.className = 'pdf-header';
-            const userNameClone = document.getElementById('userName').cloneNode(true);
-            const h1Clone = document.querySelector('h1').cloneNode(true);
-            headerDiv.appendChild(userNameClone);
-            headerDiv.appendChild(h1Clone);
-            pdfContent.appendChild(headerDiv);
+            // Load and add logo with proper aspect ratio
+            try {
+                const logoImg = new Image();
+                logoImg.crossOrigin = "anonymous";
+                logoImg.src = logoUrl;
 
-            // Add table
-            const tableClone = document.getElementById('comparisonTable').cloneNode(true);
-            pdfContent.appendChild(tableClone);
+                await new Promise((resolve, reject) => {
+                    if (logoImg.complete) {
+                        resolve();
+                    } else {
+                        logoImg.onload = () => resolve();
+                        logoImg.onerror = () => reject(new Error('Failed to load logo'));
+                    }
+                });
 
-            // Append to body to allow rendering
-            document.body.appendChild(pdfContent);
+                const aspectRatio = logoImg.naturalHeight / logoImg.naturalWidth;
+                const imgWidth = 60; // mm
+                const imgHeight = imgWidth * aspectRatio;
 
-            // Wait a bit for image to load and render
-            setTimeout(() => {
-                html2pdf()
-                    .from(pdfContent)
-                    .set({
-                        margin: 0.25,
-                        filename: 'lista_exames_apoiados.pdf',
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { 
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true
-                        },
-                        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-                    })
-                    .save()
-                    .then(() => {
-                        // Hide loading animation
-                        document.getElementById('loadingDownloadIcon').style.display = 'none';
-                        document.getElementById('downloadIcon').style.display = 'block';
+                // Create canvas to get base64
+                const canvas = document.createElement('canvas');
+                canvas.width = logoImg.naturalWidth;
+                canvas.height = logoImg.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(logoImg, 0, 0);
+                const imgData = canvas.toDataURL('image/png');
 
-                        // Clean up
-                        pdfContent.remove();
-                    });
-            }, 500);
+                // Add to PDF
+                const x = (210 - imgWidth) / 2; // Center on A4 width (210mm)
+                doc.addImage(imgData, 'PNG', x, 10, imgWidth, imgHeight);
+                startY = 10 + imgHeight + 10;
+            } catch (error) {
+                console.warn('Logo load failed:', error);
+                // Proceed without logo
+            }
+
+            // Add header with user name and title, matching site styles
+            doc.setDrawColor(255); // White for no border
+            doc.setTextColor(44, 62, 80); // #2c3e50
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text(userName, 105, startY, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.text(title, 105, startY + 10, { align: 'center' });
+
+            // Prepare table data (all exams, not filtered)
+            const rows = Object.keys(examsData).map(exame => {
+                const data = examsData[exame];
+                const valorStr = data.valor !== undefined && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
+                return [exame, data.prazo || 'N/A', valorStr];
+            });
+
+            // Add table using autoTable
+            doc.autoTable({
+                startY: startY + 20,
+                head: [['Exame', 'Prazo', 'Valor']],
+                body: rows,
+                theme: 'striped',
+                styles: { 
+                    fontSize: 9, 
+                    cellPadding: 4,
+                    overflow: 'linebreak',
+                    font: 'helvetica',
+                    fontStyle: 'normal'
+                },
+                columnStyles: {
+                    0: { cellWidth: 125 }, // ~66%
+                    1: { cellWidth: 32 },  // ~17%
+                    2: { cellWidth: 32 }   // ~17%
+                },
+                headStyles: { 
+                    fillColor: [26, 43, 95], // #1a2b5f
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                }
+            });
+
+            // Save PDF
+            doc.save('lista_exames_apoiados.pdf');
+
+            // Hide loading animation
+            document.getElementById('loadingDownloadIcon').style.display = 'none';
+            document.getElementById('downloadIcon').style.display = 'block';
         }
 
         // Add event listener to download icon
