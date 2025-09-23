@@ -6,10 +6,11 @@
     <meta name="theme-color" content="#001f3f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Lamic Apoiados">
+    <link rel="manifest" href="/manifest.json">
     <title>Lamic Apoiados</title>
     <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png" type="image/png">
-    <link rel="manifest" href="/manifest.json" type="application/manifest+json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -178,27 +179,6 @@
             margin-top: 10px;
             display: none;
         }
-        .install-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #1a2b5f;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            cursor: pointer;
-            display: none;
-            z-index: 1001;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .install-button:hover {
-            background: #2c3e50;
-        }
-        .install-button i {
-            font-size: 24px;
-        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -216,15 +196,6 @@
             }
             .logo-container img {
                 width: 200px;
-            }
-            .install-button {
-                bottom: 10px;
-                right: 10px;
-                width: 50px;
-                height: 50px;
-            }
-            .install-button i {
-                font-size: 20px;
             }
         }
     </style>
@@ -260,9 +231,6 @@
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
     </table>
-    <button id="installButton" class="install-button" title="Instalar App">
-        <i class="fas fa-download"></i>
-    </button>
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
         const usersUrl = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
@@ -274,18 +242,6 @@
         let lockoutTime = 10;
         let isLocked = false;
         let users = [];
-        let deferredPrompt;
-
-        // Register Service Worker early
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-                .then(registration => {
-                    console.log('Service Worker registrado: ', registration);
-                })
-                .catch(registrationError => {
-                    console.log('Falha no registro do Service Worker: ', registrationError);
-                });
-        }
 
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
@@ -296,32 +252,6 @@
 
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
-
-        // PWA Install Prompt
-        const installButton = document.getElementById('installButton');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installButton.style.display = 'block';
-        });
-
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA foi instalada pelo usuário');
-            installButton.style.display = 'none';
-            deferredPrompt = null;
-        });
-
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(outcome === 'accepted' ? 'Usuário aceitou a instalação' : 'Usuário recusou a instalação');
-                if (outcome === 'accepted') {
-                    installButton.style.display = 'none';
-                }
-                deferredPrompt = null;
-            }
-        });
 
         // Load users from info.json with fallback
         async function loadUsers() {
@@ -468,9 +398,23 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
 
+        // Register Service Worker for PWA
+        function registerSW() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado com sucesso:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Falha no registro do Service Worker:', error);
+                    });
+            }
+        }
+
         // Initialize on load
         window.addEventListener('load', () => {
             loadUsers();
+            registerSW();
         });
     </script>
 </body>
