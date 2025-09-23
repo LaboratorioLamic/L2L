@@ -10,6 +10,7 @@
     <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: 'Roboto Slab', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -47,6 +48,30 @@
             font-size: 16px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .download-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #1a2b5f;
+            font-size: 18px;
+            z-index: 5;
+        }
+        .download-icon:hover {
+            color: #2c3e50;
+        }
+        .loading-download {
+            position: absolute;
+            right: 15px;
+            top: 30%;
+            transform: translateY(-50%);
+            color: #1a2b5f;
+            font-size: 18px;
+            z-index: 5;
+            display: none;
+            animation: spin 1s linear infinite;
+        }
         table {
             width: 100%;
             max-width: 1200px;
@@ -61,6 +86,7 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            word-wrap: break-word;
         }
         th {
             background-color: #1a2b5f;
@@ -271,6 +297,55 @@
                 font-size: 0.8em;
             }
         }
+
+        /* PDF specific styles */
+        .pdf-content {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Roboto Slab', serif;
+        }
+        .pdf-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .pdf-logo img {
+            width: 300px;
+            height: auto;
+        }
+        .pdf-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .pdf-content table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+        .pdf-content th:nth-child(1),
+        .pdf-content td:nth-child(1) {
+            width: 66%;
+        }
+        .pdf-content th:nth-child(2),
+        .pdf-content td:nth-child(2) {
+            width: 17%;
+        }
+        .pdf-content th:nth-child(3),
+        .pdf-content td:nth-child(3) {
+            width: 17%;
+        }
+        .pdf-content th, .pdf-content td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .pdf-content th {
+            background-color: #1a2b5f;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -290,12 +365,14 @@
         </div>
     </div>
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/logo.png" alt="Logo">
+        <img src="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/logo.png" alt="Logo" id="mainLogo">
     </div>
     <p id="userName" style="display: none;">Usuário logado</p>
     <h1>Lista de Exames Apoiados</h1>
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
+        <i class="fas fa-download download-icon" id="downloadIcon" style="display: none;"></i>
+        <i class="fas fa-spinner loading-download" id="loadingDownloadIcon"></i>
     </div>
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <i class="fas fa-spinner loading-icon"></i>
@@ -313,16 +390,17 @@
     </div>
 
     <script>
-        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
-        const usersUrl = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
+        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbxQa5GD4cI6SjaPtI7nFXc8ueDQBd6RhvgCmbWXk5BvX_xOeAkYYrWLOjx0l_Xp0munjg/exec';
+        const infodata = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
         const testData = [
-            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null },
+            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base' },
         ];
         let examsData = {};
         let loginAttempts = 0;
         let lockoutTime = 10;
         let isLocked = false;
         let users = [];
+        let currentUser = '';
 
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
@@ -335,9 +413,9 @@
         document.getElementById('loginButton').disabled = true;
 
         // Load users from info.json with fallback
-        async function loadUsers() {
+        async function info() {
             try {
-                const response = await fetch(usersUrl, { method: 'GET' });
+                const response = await fetch(infodata, { method: 'GET' });
                 if (response.ok) {
                     const jsonData = await response.json();
                     users = jsonData.users || [];  // Extrai o array de "users"
@@ -368,6 +446,7 @@
             const user = users.find(u => u.user === selectedUser);
 
             if (user && user.password === password) {
+                currentUser = selectedUser;
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.querySelector('h1').style.display = 'block';
                 document.getElementById('userName').textContent = selectedUser;
@@ -375,6 +454,7 @@
                 document.querySelector('.search-container').style.display = 'block';
                 document.querySelector('.logo-container').style.display = 'block';
                 document.getElementById('comparisonTable').style.display = 'table';
+                document.getElementById('downloadIcon').style.display = 'block';
                 loginAttempts = 0;
                 lockoutTime = 10;
                 
@@ -422,6 +502,72 @@
             }
         });
 
+        // Download PDF function
+        function downloadPDF() {
+            // Show loading animation
+            document.getElementById('downloadIcon').style.display = 'none';
+            document.getElementById('loadingDownloadIcon').style.display = 'block';
+
+            // Create temporary content for PDF
+            const pdfContent = document.createElement('div');
+            pdfContent.className = 'pdf-content';
+            pdfContent.id = 'temp-pdf-content';
+
+            // Add logo
+            const logoDiv = document.createElement('div');
+            logoDiv.className = 'pdf-logo';
+            const logoImg = document.createElement('img');
+            logoImg.src = document.getElementById('mainLogo').src;
+            logoImg.alt = 'Logo';
+            logoDiv.appendChild(logoImg);
+            pdfContent.appendChild(logoDiv);
+
+            // Add header with user name and title
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'pdf-header';
+            const userNameClone = document.getElementById('userName').cloneNode(true);
+            const h1Clone = document.querySelector('h1').cloneNode(true);
+            headerDiv.appendChild(userNameClone);
+            headerDiv.appendChild(h1Clone);
+            pdfContent.appendChild(headerDiv);
+
+            // Add table
+            const tableClone = document.getElementById('comparisonTable').cloneNode(true);
+            pdfContent.appendChild(tableClone);
+
+            // Append to body to allow rendering
+            document.body.appendChild(pdfContent);
+
+            // Wait a bit for image to load and render
+            setTimeout(() => {
+                html2pdf()
+                    .from(pdfContent)
+                    .set({
+                        margin: 0.25,
+                        filename: 'lista_exames_apoiados.pdf',
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { 
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true
+                        },
+                        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                    })
+                    .save()
+                    .then(() => {
+                        // Hide loading animation
+                        document.getElementById('loadingDownloadIcon').style.display = 'none';
+                        document.getElementById('downloadIcon').style.display = 'block';
+
+                        // Clean up
+                        pdfContent.remove();
+                    });
+            }, 500);
+        }
+
+        // Add event listener to download icon
+        document.getElementById('downloadIcon').addEventListener('click', downloadPDF);
+
         // Load data from Google Sheets
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -437,14 +583,37 @@
                 console.warn('Usando dados de teste:', error);
                 data = testData;
             }
-            data.forEach(row => {
+
+            // Filtrar exames da tabela do usuário (prioridade)
+            const userExams = data.filter(row => row.Tabela === currentUser);
+            // Filtrar exames da tabela base
+            const baseExams = data.filter(row => row.Tabela === "Laboratório LAMIC");
+
+            // Limpar dados anteriores
+            examsData = {};
+
+            // Adicionar exames do usuário primeiro (prioridade)
+            userExams.forEach(row => {
                 const exame = row.Exame;
                 const prazo = row.Prazo;
                 const valor = parseFloat(row.Valor);
-                if (!examsData[exame]) {
+                if (exame && !isNaN(valor)) {
                     examsData[exame] = { prazo, valor };
                 }
             });
+
+            // Adicionar exames da base apenas se não existirem (evitar duplicatas)
+            baseExams.forEach(row => {
+                const exame = row.Exame;
+                if (exame && !(exame in examsData)) {
+                    const prazo = row.Prazo;
+                    const valor = parseFloat(row.Valor);
+                    if (!isNaN(valor)) {
+                        examsData[exame] = { prazo, valor };
+                    }
+                }
+            });
+
             renderTableHeader();
             renderTable(Object.keys(examsData));
             document.getElementById('loadingOverlay').style.display = 'none';
@@ -532,7 +701,7 @@
 
         // Initialize on load
         window.addEventListener('load', () => {
-            loadUsers();
+            info();
             showInstallBanner();
         });
     </script>
