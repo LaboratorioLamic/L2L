@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#001f3f">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Lamic Apoiados">
-    <link rel="manifest" href="/manifest.json">
     <title>Lamic Apoiados</title>
     <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png">
+    <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -198,6 +195,82 @@
                 width: 200px;
             }
         }
+
+        /* CSS for Install Banner (adapted from previous) */
+        .install-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            background-color: #f4f7fa;
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 50;
+            animation: slideUp 0.5s ease-out;
+            font-size: 0.9em;
+            text-align: center;
+            transition: bottom 0.3s ease;
+        }
+        
+        .install-banner.show {
+            display: flex;
+        }
+        
+        .install-banner p {
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .install-banner button {
+            background-color: #1a2b5f;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .install-banner button:hover {
+            background-color: #2c3e50;
+        }
+        
+        .install-banner .close-install {
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 1.2em;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .install-banner {
+                bottom: 10px;
+                padding: 10px;
+                font-size: 0.8em;
+            }
+            
+            .install-banner button {
+                padding: 6px 12px;
+                font-size: 0.8em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -231,6 +304,14 @@
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
     </table>
+
+    <!-- Install Banner -->
+    <div id="install-banner" class="install-banner">
+        <p>Instale nosso aplicativo para uma melhor experiência!</p>
+        <button id="install-app-button">Instalar</button>
+        <button class="close-install"><i class="fas fa-times"></i></button>
+    </div>
+
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbw0stdrXPcQF2E9Ii4hfA_4KKIip4fNRVnyvt-qWVpa3faBBTHOQfHQXNOTQcDKZQnEGA/exec';
         const usersUrl = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
@@ -398,23 +479,61 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
 
-        // Register Service Worker for PWA
-        function registerSW() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado com sucesso:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Falha no registro do Service Worker:', error);
-                    });
+        // PWA Install Functionality
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Install prompt is ready to be triggered');
+        });
+
+        function showInstallBanner() {
+            if (localStorage.getItem('installPromptDismissed') || localStorage.getItem('appInstalled')) {
+                return;
             }
+
+            const banner = document.getElementById('install-banner');
+
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 1000);
+
+            document.getElementById('install-app-button').addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                            localStorage.setItem('appInstalled', 'true');
+                        } else {
+                            console.log('User dismissed the install prompt');
+                        }
+                        deferredPrompt = null;
+                        banner.classList.remove('show');
+                    });
+                }
+            });
+
+            document.querySelector('.close-install').addEventListener('click', () => {
+                localStorage.setItem('installPromptDismissed', 'true');
+                banner.classList.remove('show');
+            });
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/service-worker.js', { scope: '/' }).then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch((error) => {
+                console.error('Service Worker registration failed:', error);
+            });
         }
 
         // Initialize on load
         window.addEventListener('load', () => {
             loadUsers();
-            registerSW();
+            showInstallBanner();
         });
     </script>
 </body>
