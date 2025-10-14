@@ -524,7 +524,7 @@
             // Add table using autoTable
             doc.autoTable({
                 startY: startY + 20,
-                head: [['Exame', 'Material Biológico', 'Prazo', 'Valor']],
+                head: [['Exame', 'Material', 'Prazo', 'Valor']],
                 body: rows,
                 theme: 'striped',
                 styles: { 
@@ -614,7 +614,7 @@
 
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
-            header.innerHTML = '<tr><th>Exame</th><th>Material</th><th>Prazo</th><th>Valor</th></tr>';
+            header.innerHTML = '<tr><th>Exame</th><th>Material Biológico</th><th>Prazo</th><th>Valor</th></tr>';
         }
 
         function renderTable(exams) {
