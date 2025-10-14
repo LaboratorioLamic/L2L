@@ -342,10 +342,10 @@
     </div>
 
     <script>
-        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbxQa5GD4cI6SjaPtI7nFXc8ueDQBd6RhvgCmbWXk5BvX_xOeAkYYrWLOjx0l_Xp0munjg/exec';
+        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbyxRquTAgEBQpzZ-0nQbk48uzq4hU2biwTMmY5ly3tPceybSGTp6XlzJ9BezbknYeEAwQ/exec';
         const infodata = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
         const testData = [
-            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base' },
+            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base', Material: '-' },
         ];
         let examsData = {};
         let loginAttempts = 0;
@@ -518,13 +518,13 @@
             const rows = Object.keys(examsData).map(exame => {
                 const data = examsData[exame];
                 const valorStr = data.valor !== undefined && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
-                return [exame, data.prazo || 'N/A', valorStr];
+                return [exame, data.material || 'N/A', data.prazo || 'N/A', valorStr];
             });
 
             // Add table using autoTable
             doc.autoTable({
                 startY: startY + 20,
-                head: [['Exame', 'Prazo', 'Valor']],
+                head: [['Exame', 'Material Biológico', 'Prazo', 'Valor']],
                 body: rows,
                 theme: 'striped',
                 styles: { 
@@ -535,9 +535,10 @@
                     fontStyle: 'normal'
                 },
                 columnStyles: {
-                    0: { cellWidth: 125 }, // ~66%
-                    1: { cellWidth: 32 },  // ~17%
-                    2: { cellWidth: 32 }   // ~17%
+                    0: { cellWidth: 90 }, // Exame
+                    1: { cellWidth: 35 }, // Material
+                    2: { cellWidth: 32 }, // Prazo
+                    3: { cellWidth: 32 }  // Valor
                 },
                 headStyles: { 
                     fillColor: [26, 43, 95], // #1a2b5f
@@ -587,8 +588,9 @@
                 const exame = row.Exame;
                 const prazo = row.Prazo;
                 const valor = parseFloat(row.Valor);
+                const material = row.Material;
                 if (exame && !isNaN(valor)) {
-                    examsData[exame] = { prazo, valor };
+                    examsData[exame] = { prazo, valor, material };
                 }
             });
 
@@ -598,8 +600,9 @@
                 if (exame && !(exame in examsData)) {
                     const prazo = row.Prazo;
                     const valor = parseFloat(row.Valor);
+                    const material = row.Material;
                     if (!isNaN(valor)) {
-                        examsData[exame] = { prazo, valor };
+                        examsData[exame] = { prazo, valor, material };
                     }
                 }
             });
@@ -611,7 +614,7 @@
 
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
-            header.innerHTML = '<tr><th>Exame</th><th>Prazo</th><th>Valor</th></tr>';
+            header.innerHTML = '<tr><th>Exame</th><th>Material</th><th>Prazo</th><th>Valor</th></tr>';
         }
 
         function renderTable(exams) {
@@ -619,9 +622,9 @@
             body.innerHTML = '';
             exams.forEach(exame => {
                 const row = document.createElement('tr');
-                const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A' };
+                const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A', material: 'N/A' };
                 const displayValor = data.valor !== 'N/A' && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
-                row.innerHTML = `<td>${exame}</td><td>${data.prazo}</td><td>${displayValor}</td>`;
+                row.innerHTML = `<td>${exame}</td><td>${data.material || 'N/A'}</td><td>${data.prazo}</td><td>${displayValor}</td>`;
                 body.appendChild(row);
             });
         }
@@ -696,8 +699,8 @@
         });
 
         function ctrlShiftKey(e, keyCode) {
-                    return e.ctrlKey && e.shiftKey && e.keyCode === keyCode.charCodeAt(0);
-                }
+            return e.ctrlKey && e.shiftKey && e.keyCode === keyCode.charCodeAt(0);
+        }
 
         document.onkeydown = function(event) {
             if (
