@@ -8,13 +8,13 @@
     <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png" type="image/png">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png">
     <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
-            font-family: 'Roboto Slab', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto Slab', 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7fa;
             color: #333;
             margin: 0;
@@ -203,6 +203,81 @@
             margin-top: 10px;
             display: none;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-content-presentation {
+            background: #e6f0fa;
+            padding: 20px;
+            border: 2px solid #1a2b5f;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.3s ease-in-out;
+            font-family: 'Inter', sans-serif;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-content-presentation h2 {
+            font-size: clamp(1.4em, 2.5vw, 1.8em);
+            font-weight: 700;
+            color: #1a2b5f;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal-content-presentation textarea {
+            width: 94%;
+            height: 350px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: clamp(0.9em, 2vw, 1em);
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            background: #ffffff;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .modal-content-presentation button {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 2vw, 1em);
+            font-weight: 600;
+            width: 48%;
+            margin: 1%;
+            transition: background-color 0.3s ease;
+            color: white;
+        }
+        .modal-content-presentation button.cancel {
+            background-color: #dc3545;
+            color: white;
+        }
+        .modal-content-presentation button.cancel:hover {
+            background-color: #c82333;
+            color: white;
+        }
+        .modal-content-presentation button.download {
+            background-color: #1a2b5f;
+            color: white;
+        }
+        .modal-content-presentation button.download:hover {
+            background-color: #2c3e50;
+            color: white;
+        }
         @media (max-width: 768px) {
             table {
                 font-size: 14px;
@@ -221,9 +296,14 @@
             .logo-container img {
                 width: 200px;
             }
+            .modal-content-presentation {
+                max-width: 90%;
+            }
+            .modal-content-presentation textarea {
+                height: 250px;
+            }
         }
-
-        /* CSS for Install Banner (adapted from previous) */
+        /* CSS for Install Banner */
         .install-banner {
             position: fixed;
             bottom: 20px;
@@ -244,16 +324,13 @@
             text-align: center;
             transition: bottom 0.3s ease;
         }
-        
         .install-banner.show {
             display: flex;
         }
-        
         .install-banner p {
             margin: 0;
             font-weight: 500;
         }
-        
         .install-banner button {
             background-color: #1a2b5f;
             color: white;
@@ -265,11 +342,9 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        
         .install-banner button:hover {
             background-color: #2c3e50;
         }
-        
         .install-banner .close-install {
             background: none;
             border: none;
@@ -280,19 +355,16 @@
             top: 10px;
             right: 10px;
         }
-        
         @keyframes slideUp {
             from { transform: translateY(100px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        
         @media (max-width: 768px) {
             .install-banner {
                 bottom: 10px;
                 padding: 10px;
                 font-size: 0.8em;
             }
-            
             .install-banner button {
                 padding: 6px 12px;
                 font-size: 0.8em;
@@ -316,11 +388,20 @@
             <p id="waitMessage">Aguarde para tentar novamente</p>
         </div>
     </div>
+
+    <div class="modal" id="presentation-modal">
+        <div class="modal-content-presentation">
+            <h2>Editar Texto de Apresentação</h2>
+            <textarea id="presentationText"></textarea>
+            <button class="cancel" id="cancel-presentation">Cancelar</button><button class="download" id="download-presentation">Baixar</button>
+        </div>
+    </div>
+
     <div class="logo-container">
         <img src="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/logo.png" alt="Logo" id="mainLogo">
     </div>
     <p id="userName" style="display: none;">Usuário logado</p>
-    <h1>Lista de Exames Apoiados</h1>
+    <h1>Proposta de Exames</h1>
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="Busque por nome do exame...">
         <i class="fas fa-download download-icon" id="downloadIcon" style="display: none;"></i>
@@ -334,7 +415,6 @@
         <tbody id="tableBody"></tbody>
     </table>
 
-    <!-- Install Banner -->
     <div id="install-banner" class="install-banner">
         <p>Instale nosso aplicativo para uma melhor experiência!</p>
         <button id="install-app-button">Instalar</button>
@@ -354,6 +434,32 @@
         let users = [];
         let currentUser = '';
 
+        // Texto padrão para a apresentação
+        const defaultPresentationText = `Ao (Nome fantasia e CNPJ)
+Prezado(a) Senhor(a),
+
+É com grande satisfação que encaminhamos para apreciação de V.Sa, a nossa proposta orçamentária, para realização de exames laboratoriais de nossa especialidade.
+
+Salientamos que todos os exames aqui apresentados estão disponíveis para imediata realização.
+
+Ademais, ressaltamos que a estrutura do Núcleo Técnico Operacional – NTO do Laboratório LAMIC está apta a realizar uma gama de aproximadamente 1.000 (mil) diferentes exames, e desta forma, caso a vossa senhoria demande a realização de algum(ns) exame(s) que não esteja(m) detalhado(s) na presente proposta, encontramo-nos a disposição para apresentar proposta específica para o(s) mesmo(s).
+
+A recepção dos materiais para análise obedecerá aos seguintes horários:
+
+Juazeiro do Norte (NTO – Centro) – ÁREA TÉCNICA 
+•	Segunda-feira à Sexta-feira: 06h00 às 17h00
+•	Sábado: 06h00 às 12h00
+
+Entrega dos Resultados:
+
+Os prazos de entrega dos resultados dos exames estão evidenciados ao lado da descrição de cada exame na relação anexa à presente proposta e levam em consideração o horário da entrada do material coletado na área técnica do Laboratório LAMIC.`;
+
+        // Texto fixo após a tabela
+        const closingText = `Encontramo-nos à disposição para esclarecer eventuais dúvidas julgadas necessárias acerca do presente orçamento.
+
+Atenciosamente, Dr. Leonardo
+Laboratório LAMIC`;
+
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
         document.getElementById('userName').style.display = 'none';
@@ -369,8 +475,8 @@
             try {
                 const response = await fetch(infodata, { method: 'GET' });
                 if (response.ok) {
-                    const jsonData = await response.json();
-                    users = jsonData.users || [];  // Extrai o array de "users"
+                    users = await response.json();
+                    users = users.users || [];
                 } else {
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
@@ -378,15 +484,25 @@
                 console.warn('Falha ao carregar usuários, usando lista de fallback:', error);
             }
             const userSelect = document.getElementById('userSelect');
-            userSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Clear and reset
+            userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
             users.forEach(user => {
                 const option = document.createElement('option');
                 option.value = user.user;
                 option.textContent = user.user;
                 userSelect.appendChild(option);
             });
-            // Enable login button after users are loaded
             document.getElementById('loginButton').disabled = false;
+        }
+
+        // Show presentation modal
+        function showPresentationModal() {
+            document.getElementById('presentation-modal').style.display = 'flex';
+            document.getElementById('presentationText').value = defaultPresentationText;
+        }
+
+        // Hide presentation modal
+        function hidePresentationModal() {
+            document.getElementById('presentation-modal').style.display = 'none';
         }
 
         // Handle login
@@ -409,14 +525,12 @@
                 document.getElementById('downloadIcon').style.display = 'block';
                 loginAttempts = 0;
                 lockoutTime = 10;
-                
                 loadData();
             } else {
                 loginAttempts++;
                 document.getElementById('loginBox').classList.add('shake');
                 document.getElementById('errorMessage').style.display = 'block';
                 document.getElementById('errorMessage').textContent = 'Senha incorreta.';
-
                 setTimeout(() => {
                     document.getElementById('loginBox').classList.remove('shake');
                 }, 500);
@@ -447,16 +561,15 @@
             }
         });
 
-        // Allow Enter key to trigger login in password input
+        // Allow Enter key to trigger login
         document.getElementById('passwordInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !isLocked) {
                 document.getElementById('loginButton').click();
             }
         });
 
-        // Download PDF function (async)
+        // Download PDF function
         async function downloadPDF() {
-            // Show loading animation
             document.getElementById('downloadIcon').style.display = 'none';
             document.getElementById('loadingDownloadIcon').style.display = 'block';
 
@@ -468,7 +581,7 @@
             const title = document.querySelector('h1').textContent;
             let startY = 20;
 
-            // Load and add logo with proper aspect ratio
+            // Load and add logo
             try {
                 const logoImg = new Image();
                 logoImg.crossOrigin = "anonymous";
@@ -484,10 +597,9 @@
                 });
 
                 const aspectRatio = logoImg.naturalHeight / logoImg.naturalWidth;
-                const imgWidth = 60; // mm
+                const imgWidth = 60;
                 const imgHeight = imgWidth * aspectRatio;
 
-                // Create canvas to get base64
                 const canvas = document.createElement('canvas');
                 canvas.width = logoImg.naturalWidth;
                 canvas.height = logoImg.naturalHeight;
@@ -495,36 +607,45 @@
                 ctx.drawImage(logoImg, 0, 0);
                 const imgData = canvas.toDataURL('image/png');
 
-                // Add to PDF
-                const x = (210 - imgWidth) / 2; // Center on A4 width (210mm)
+                const x = (210 - imgWidth) / 2;
                 doc.addImage(imgData, 'PNG', x, 10, imgWidth, imgHeight);
                 startY = 10 + imgHeight + 10;
             } catch (error) {
                 console.warn('Logo load failed:', error);
-                // Proceed without logo
             }
 
-            // Add header with user name and title, matching site styles
-            doc.setDrawColor(255); // White for no border
-            doc.setTextColor(44, 62, 80); // #2c3e50
+            // Add header
+            doc.setTextColor(44, 62, 80);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(18);
-            doc.text(userName, 105, startY, { align: 'center' });
+            doc.text(title, 105, startY, { align: 'center' });
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(12);
-            doc.text(title, 105, startY + 10, { align: 'center' });
 
-            // Prepare table data (all exams, not filtered)
+            // Add formatted date
+            const dateText = getFormattedDate();
+            doc.text(dateText, 105, startY + 10, { align: 'center' });
+
+            // Add presentation text
+            const presentationText = document.getElementById('presentationText').value || defaultPresentationText;
+            const presentationLines = doc.splitTextToSize(presentationText, 180);
+            doc.text(presentationLines, 15, startY + 20);
+
+            // Calculate table position
+            let textHeight = presentationLines.length * 5;
+            let tableStartY = startY + 20 + textHeight + 10;
+
+            // Prepare table data
             const rows = Object.keys(examsData).map(exame => {
                 const data = examsData[exame];
                 const valorStr = data.valor !== undefined && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
                 return [exame, data.material || 'N/A', data.prazo || 'N/A', valorStr];
             });
 
-            // Add table using autoTable
+            // Add table
             doc.autoTable({
-                startY: startY + 20,
-                head: [['Exame', 'Material', 'Prazo', 'Valor']],
+                startY: tableStartY,
+                head: [['Exame', 'Material Biológico', 'Prazo', 'Valor']],
                 body: rows,
                 theme: 'striped',
                 styles: { 
@@ -535,29 +656,43 @@
                     fontStyle: 'normal'
                 },
                 columnStyles: {
-                    0: { cellWidth: 90 }, // Exame
-                    1: { cellWidth: 35 }, // Material
-                    2: { cellWidth: 32 }, // Prazo
-                    3: { cellWidth: 32 }  // Valor
+                    0: { cellWidth: 90 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 32 },
+                    3: { cellWidth: 32 }
                 },
                 headStyles: { 
-                    fillColor: [26, 43, 95], // #1a2b5f
+                    fillColor: [26, 43, 95],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
                     fontSize: 10
                 }
             });
 
-            // Save PDF
-            doc.save('lista_exames_apoiados.pdf');
+            // Add closing text
+            const finalY = doc.lastAutoTable.finalY + 10;
+            const closingLines = doc.splitTextToSize(closingText, 180);
+            doc.text(closingLines, 15, finalY);
 
-            // Hide loading animation
+            // Save PDF
+            doc.save('Lista de Exames - LAMIC.pdf');
+
             document.getElementById('loadingDownloadIcon').style.display = 'none';
             document.getElementById('downloadIcon').style.display = 'block';
         }
 
-        // Add event listener to download icon
-        document.getElementById('downloadIcon').addEventListener('click', downloadPDF);
+        // Format date
+        function getFormattedDate() {
+            const months = [
+                'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+            ];
+            const today = new Date();
+            const day = String(today.getDate()).padStart(2, '0');
+            const month = months[today.getMonth()];
+            const year = today.getFullYear();
+            return `Juazeiro do Norte/CE, ${day} de ${month} de ${year}.`;
+        }
 
         // Load data from Google Sheets
         async function loadData() {
@@ -575,15 +710,12 @@
                 data = testData;
             }
 
-            // Filtrar exames da tabela do usuário (prioridade)
+            // Filter user-specific and base exams
             const userExams = data.filter(row => row.Tabela === currentUser);
-            // Filtrar exames da tabela base
             const baseExams = data.filter(row => row.Tabela === "Laboratório LAMIC");
 
-            // Limpar dados anteriores
             examsData = {};
 
-            // Adicionar exames do usuário primeiro (prioridade)
             userExams.forEach(row => {
                 const exame = row.Exame;
                 const prazo = row.Prazo;
@@ -594,7 +726,6 @@
                 }
             });
 
-            // Adicionar exames da base apenas se não existirem (evitar duplicatas)
             baseExams.forEach(row => {
                 const exame = row.Exame;
                 if (exame && !(exame in examsData)) {
@@ -640,6 +771,21 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
+
+        // Modal event listeners
+        document.getElementById('downloadIcon').addEventListener('click', () => {
+            showPresentationModal();
+        });
+
+        document.getElementById('cancel-presentation').addEventListener('click', () => {
+            hidePresentationModal();
+            document.getElementById('downloadIcon').style.display = 'block';
+        });
+
+        document.getElementById('download-presentation').addEventListener('click', () => {
+            hidePresentationModal();
+            downloadPDF();
+        });
 
         // PWA Install Functionality
         let deferredPrompt;
@@ -704,12 +850,12 @@
 
         document.onkeydown = function(event) {
             if (
-                event.keyCode === 123 ||  // F12
-                ctrlShiftKey(event, 'I') ||  // Ctrl + Shift + I
-                ctrlShiftKey(event, 'J') ||  // Ctrl + Shift + J
-                ctrlShiftKey(event, 'C') ||  // Ctrl + Shift + C
-                (event.ctrlKey && event.keyCode === 'U'.charCodeAt(0)) ||  // Ctrl + U
-                (event.ctrlKey && event.keyCode === 'S'.charCodeAt(0))  // Ctrl + S
+                event.keyCode === 123 ||
+                ctrlShiftKey(event, 'I') ||
+                ctrlShiftKey(event, 'J') ||
+                ctrlShiftKey(event, 'C') ||
+                (event.ctrlKey && event.keyCode === 'U'.charCodeAt(0)) ||
+                (event.ctrlKey && event.keyCode === 'S'.charCodeAt(0))
             ) {
                 event.preventDefault();
                 return false;
