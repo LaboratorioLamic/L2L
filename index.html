@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#001f3f">
     <title>Lamic Apoiados</title>
-    <link rel="icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/icon.png">
+    <link rel="icon" href="https://i.imgur.com/CMQ2kVH.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/CMQ2kVH.png">
     <link rel="manifest" href="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -388,7 +388,6 @@
             <p id="waitMessage">Aguarde para tentar novamente</p>
         </div>
     </div>
-
     <div class="modal" id="presentation-modal">
         <div class="modal-content-presentation">
             <h2>Editar Texto de Apresentação</h2>
@@ -396,9 +395,8 @@
             <button class="cancel" id="cancel-presentation">Cancelar</button><button class="download" id="download-presentation">Baixar</button>
         </div>
     </div>
-
     <div class="logo-container">
-        <img src="https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/assents/logo.png" alt="Logo" id="mainLogo">
+        <img src="https://i.imgur.com/qVfGMyc.png" alt="Logo" id="mainLogo">
     </div>
     <p id="userName" style="display: none;">Usuário logado</p>
     <h1>Proposta de Exames</h1>
@@ -414,16 +412,14 @@
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
     </table>
-
     <div id="install-banner" class="install-banner">
         <p>Instale nosso aplicativo para uma melhor experiência!</p>
         <button id="install-app-button">Instalar</button>
         <button class="close-install"><i class="fas fa-times"></i></button>
     </div>
-
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbyxRquTAgEBQpzZ-0nQbk48uzq4hU2biwTMmY5ly3tPceybSGTp6XlzJ9BezbknYeEAwQ/exec';
-        const infodata = 'https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/info.json';
+        const binUrl = 'https://api.jsonbin.io/v3/b/68fb785b43b1c97be97d45c3/latest';
         const testData = [
             { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base', Material: '-' },
         ];
@@ -433,55 +429,50 @@
         let isLocked = false;
         let users = [];
         let currentUser = '';
-
         // Texto padrão para a apresentação
         const defaultPresentationText = `Ao (Nome fantasia e CNPJ)
 Prezado(a) Senhor(a),
-
 É com grande satisfação que encaminhamos para apreciação de V.Sa, a nossa proposta orçamentária, para realização de exames laboratoriais de nossa especialidade.
-
 Salientamos que todos os exames aqui apresentados estão disponíveis para imediata realização.
-
 Ademais, ressaltamos que a estrutura do Núcleo Técnico Operacional – NTO do Laboratório LAMIC está apta a realizar uma gama de aproximadamente 1.000 (mil) diferentes exames, e desta forma, caso vossa senhoria demande a realização de algum(ns) exame(s) que não esteja(m) detalhado(s) na presente proposta, encontramo-nos a disposição para apresentar proposta específica para o(s) mesmo(s).
-
 A recepção dos materiais para análise obedecerá aos seguintes horários:
-
-Juazeiro do Norte (NTO – Centro) – ÁREA TÉCNICA 
-•	Segunda-feira à Sexta-feira: 06h00 às 17h00
-•	Sábado: 06h00 às 12h00
-
+Juazeiro do Norte (NTO – Centro) – ÁREA TÉCNICA
+• Segunda-feira à Sexta-feira: 06h00 às 17h00
+• Sábado: 06h00 às 12h00
 Entrega dos Resultados:
-
 Os prazos de entrega dos resultados dos exames estão evidenciados ao lado da descrição de cada exame na relação anexa à presente proposta e levam em consideração o horário da entrada do material coletado na área técnica do Laboratório LAMIC.`;
-
         // Texto fixo após a tabela
         const closingText = `Encontramo-nos à disposição para esclarecer eventuais dúvidas julgadas necessárias acerca do presente orçamento.
-
 Atenciosamente, Dr. Leonardo Bezerra
 Laboratório LAMIC`;
-
         // Hide main content initially
         document.querySelector('h1').style.display = 'none';
         document.getElementById('userName').style.display = 'none';
         document.querySelector('.search-container').style.display = 'none';
         document.querySelector('.logo-container').style.display = 'none';
         document.getElementById('comparisonTable').style.display = 'none';
-
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
-
-        // Load users from info.json with fallback
+        // Load users from JSONBin with fallback
         async function info() {
             try {
-                const response = await fetch(infodata, { method: 'GET' });
+                const response = await fetch(binUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Access-Key': '$2a$10$AEzvnlbr8tXT0FIcphB/GuRb/PlkuUd80M5V1muqcw.0YgY8qHGAK',
+                        'X-Access-Key-Id': '68fb7884ae596e708f2902ca',
+                        'Content-Type': 'application/json'
+                    }
+                });
                 if (response.ok) {
-                    users = await response.json();
-                    users = users.users || [];
+                    const data = await response.json();
+                    users = data.record.users || [];
                 } else {
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
             } catch (error) {
-                console.warn('Falha ao carregar usuários, usando lista de fallback:', error);
+                console.warn('Falha ao carregar usuários do JSONBin, usando lista de fallback:', error);
+                users = []; // Ou fallback para uma lista vazia/hardcoded se necessário
             }
             const userSelect = document.getElementById('userSelect');
             userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
@@ -493,26 +484,21 @@ Laboratório LAMIC`;
             });
             document.getElementById('loginButton').disabled = false;
         }
-
         // Show presentation modal
         function showPresentationModal() {
             document.getElementById('presentation-modal').style.display = 'flex';
             document.getElementById('presentationText').value = defaultPresentationText;
         }
-
         // Hide presentation modal
         function hidePresentationModal() {
             document.getElementById('presentation-modal').style.display = 'none';
         }
-
         // Handle login
         document.getElementById('loginButton').addEventListener('click', async () => {
             if (isLocked) return;
-
             const selectedUser = document.getElementById('userSelect').value;
             const password = document.getElementById('passwordInput').value;
             const user = users.find(u => u.user === selectedUser);
-
             if (user && user.password === password) {
                 currentUser = selectedUser;
                 document.getElementById('loginOverlay').style.display = 'none';
@@ -534,7 +520,6 @@ Laboratório LAMIC`;
                 setTimeout(() => {
                     document.getElementById('loginBox').classList.remove('shake');
                 }, 500);
-
                 if (loginAttempts >= 5) {
                     isLocked = true;
                     document.getElementById('loginButton').disabled = true;
@@ -542,7 +527,6 @@ Laboratório LAMIC`;
                     document.getElementById('timerBar').style.display = 'block';
                     document.getElementById('waitMessage').style.display = 'block';
                     document.getElementById('timerProgress').style.width = '0%';
-
                     let timeLeft = lockoutTime;
                     const interval = setInterval(() => {
                         timeLeft--;
@@ -560,33 +544,27 @@ Laboratório LAMIC`;
                 }
             }
         });
-
         // Allow Enter key to trigger login
         document.getElementById('passwordInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !isLocked) {
                 document.getElementById('loginButton').click();
             }
         });
-
         // Download PDF function
         async function downloadPDF() {
             document.getElementById('downloadIcon').style.display = 'none';
             document.getElementById('loadingDownloadIcon').style.display = 'block';
-
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-
             const logoUrl = document.getElementById('mainLogo').src;
             const userName = document.getElementById('userName').textContent;
             const title = document.querySelector('h1').textContent;
             let startY = 20;
-
             // Load and add logo
             try {
                 const logoImg = new Image();
                 logoImg.crossOrigin = "anonymous";
                 logoImg.src = logoUrl;
-
                 await new Promise((resolve, reject) => {
                     if (logoImg.complete) {
                         resolve();
@@ -595,25 +573,21 @@ Laboratório LAMIC`;
                         logoImg.onerror = () => reject(new Error('Failed to load logo'));
                     }
                 });
-
                 const aspectRatio = logoImg.naturalHeight / logoImg.naturalWidth;
                 const imgWidth = 60;
                 const imgHeight = imgWidth * aspectRatio;
-
                 const canvas = document.createElement('canvas');
                 canvas.width = logoImg.naturalWidth;
                 canvas.height = logoImg.naturalHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(logoImg, 0, 0);
                 const imgData = canvas.toDataURL('image/png');
-
                 const x = (210 - imgWidth) / 2;
                 doc.addImage(imgData, 'PNG', x, 10, imgWidth, imgHeight);
                 startY = 10 + imgHeight + 10;
             } catch (error) {
                 console.warn('Logo load failed:', error);
             }
-
             // Add header
             doc.setTextColor(44, 62, 80);
             doc.setFont('helvetica', 'bold');
@@ -621,35 +595,30 @@ Laboratório LAMIC`;
             doc.text(title, 105, startY, { align: 'center' });
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(12);
-
             // Add formatted date
             const dateText = getFormattedDate();
             doc.text(dateText, 105, startY + 10, { align: 'center' });
-
             // Add presentation text
             const presentationText = document.getElementById('presentationText').value || defaultPresentationText;
             const presentationLines = doc.splitTextToSize(presentationText, 180);
             doc.text(presentationLines, 15, startY + 20);
-
             // Calculate table position
             let textHeight = presentationLines.length * 5;
             let tableStartY = startY + 20 + textHeight + 10;
-
             // Prepare table data
             const rows = Object.keys(examsData).map(exame => {
                 const data = examsData[exame];
                 const valorStr = data.valor !== undefined && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
                 return [exame, data.material || 'N/A', data.prazo || 'N/A', valorStr];
             });
-
             // Add table
             doc.autoTable({
                 startY: tableStartY,
                 head: [['Exame', 'Material Biológico', 'Prazo', 'Valor']],
                 body: rows,
                 theme: 'striped',
-                styles: { 
-                    fontSize: 9, 
+                styles: {
+                    fontSize: 9,
                     cellPadding: 4,
                     overflow: 'linebreak',
                     font: 'helvetica',
@@ -661,26 +630,22 @@ Laboratório LAMIC`;
                     2: { cellWidth: 32 },
                     3: { cellWidth: 32 }
                 },
-                headStyles: { 
+                headStyles: {
                     fillColor: [26, 43, 95],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
                     fontSize: 10
                 }
             });
-
             // Add closing text
             const finalY = doc.lastAutoTable.finalY + 10;
             const closingLines = doc.splitTextToSize(closingText, 180);
             doc.text(closingLines, 15, finalY);
-
             // Save PDF
             doc.save('Lista de Exames - LAMIC.pdf');
-
             document.getElementById('loadingDownloadIcon').style.display = 'none';
             document.getElementById('downloadIcon').style.display = 'block';
         }
-
         // Format date
         function getFormattedDate() {
             const months = [
@@ -693,7 +658,6 @@ Laboratório LAMIC`;
             const year = today.getFullYear();
             return `Juazeiro do Norte/CE, ${day} de ${month} de ${year}.`;
         }
-
         // Load data from Google Sheets
         async function loadData() {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -709,13 +673,10 @@ Laboratório LAMIC`;
                 console.warn('Usando dados de teste:', error);
                 data = testData;
             }
-
             // Filter user-specific and base exams
             const userExams = data.filter(row => row.Tabela === currentUser);
             const baseExams = data.filter(row => row.Tabela === "Laboratório LAMIC");
-
             examsData = {};
-
             userExams.forEach(row => {
                 const exame = row.Exame;
                 const prazo = row.Prazo;
@@ -725,7 +686,6 @@ Laboratório LAMIC`;
                     examsData[exame] = { prazo, valor, material };
                 }
             });
-
             baseExams.forEach(row => {
                 const exame = row.Exame;
                 if (exame && !(exame in examsData)) {
@@ -737,17 +697,14 @@ Laboratório LAMIC`;
                     }
                 }
             });
-
             renderTableHeader();
             renderTable(Object.keys(examsData));
             document.getElementById('loadingOverlay').style.display = 'none';
         }
-
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
             header.innerHTML = '<tr><th>Exame</th><th>Material Biológico</th><th>Prazo</th><th>Valor</th></tr>';
         }
-
         function renderTable(exams) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
@@ -759,7 +716,6 @@ Laboratório LAMIC`;
                 body.appendChild(row);
             });
         }
-
         function filterExams(query) {
             const matchingExams = Object.keys(examsData).filter(exame =>
                 exame.toLowerCase().includes(query.toLowerCase())
@@ -769,44 +725,34 @@ Laboratório LAMIC`;
                 renderTable(Object.keys(examsData));
             }
         }
-
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
-
         // Modal event listeners
         document.getElementById('downloadIcon').addEventListener('click', () => {
             showPresentationModal();
         });
-
         document.getElementById('cancel-presentation').addEventListener('click', () => {
             hidePresentationModal();
             document.getElementById('downloadIcon').style.display = 'block';
         });
-
         document.getElementById('download-presentation').addEventListener('click', () => {
             hidePresentationModal();
             downloadPDF();
         });
-
         // PWA Install Functionality
         let deferredPrompt;
-
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('Install prompt is ready to be triggered');
         });
-
         function showInstallBanner() {
             if (localStorage.getItem('installPromptDismissed') || localStorage.getItem('appInstalled')) {
                 return;
             }
-
             const banner = document.getElementById('install-banner');
-
             setTimeout(() => {
                 banner.classList.add('show');
             }, 1000);
-
             document.getElementById('install-app-button').addEventListener('click', () => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
@@ -822,13 +768,11 @@ Laboratório LAMIC`;
                     });
                 }
             });
-
             document.querySelector('.close-install').addEventListener('click', () => {
                 localStorage.setItem('installPromptDismissed', 'true');
                 banner.classList.remove('show');
             });
         }
-
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('https://raw.githubusercontent.com/LaboratorioLamic/L2L/refs/heads/main/service-worker.js', { scope: '/' }).then((registration) => {
@@ -837,17 +781,14 @@ Laboratório LAMIC`;
                 console.error('Service Worker registration failed:', error);
             });
         }
-
         // Initialize on load
         window.addEventListener('load', () => {
             info();
             showInstallBanner();
         });
-
         function ctrlShiftKey(e, keyCode) {
             return e.ctrlKey && e.shiftKey && e.keyCode === keyCode.charCodeAt(0);
         }
-
         document.onkeydown = function(event) {
             if (
                 event.keyCode === 123 ||
