@@ -81,7 +81,7 @@
             background-color: white;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible; /* Alterado para permitir tooltip */
         }
         th, td {
             padding: 12px;
@@ -278,31 +278,90 @@
             background-color: #2c3e50;
             color: white;
         }
-        @media (max-width: 768px) {
-            table {
-                font-size: 14px;
-            }
-            .loading-icon {
-                font-size: 48px;
-            }
-            .logo-container {
-                position: relative;
-                left: auto;
-                top: auto;
-                display: flex;
-                justify-content: center;
-                margin-bottom: 20px;
-            }
-            .logo-container img {
-                width: 200px;
-            }
-            .modal-content-presentation {
-                max-width: 90%;
-            }
-            .modal-content-presentation textarea {
-                height: 250px;
-            }
-        }
+        
+       /* Instrução Tooltip Styles - Corrigido */
+.instruction-cell {
+    position: relative;
+    text-align: center;
+    cursor: pointer;
+    color: #1a2b5f;
+}
+
+.instruction-tooltip {
+    display: none;
+    position: absolute;
+    right: 130%; /* Distância do ícone */
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ffffff;
+    border: 2px solid #1a2b5f;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: -5px 5px 15px rgba(0,0,0,0.2);
+    z-index: 100;
+    
+    /* Largura aumentada conforme solicitado */
+    width: 450px;
+    min-width: 150px;
+    
+    color: #333;
+    text-align: left;
+    
+    /* Respeita quebras de linha da planilha */
+    white-space: pre-wrap; 
+    word-wrap: break-word;
+    
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: normal;
+    line-height: 1.5;
+}
+
+/* Seta da janela */
+.instruction-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    margin-top: -8px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent transparent #1a2b5f;
+}
+
+/* Animação e Exibição */
+.instruction-cell.active .instruction-tooltip {
+    display: block;
+    animation: slideInLeft 0.3s ease-out forwards;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+/* Ajuste para telas menores */
+@media (max-width: 768px) {
+    .instruction-tooltip {
+        width: 250px;
+        right: 0;
+        top: 100%;
+        transform: none;
+    }
+    .instruction-tooltip::after {
+        display: none;
+    }
+    @keyframes slideInLeft {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+}
         /* CSS for Install Banner */
         .install-banner {
             position: fixed;
@@ -418,10 +477,10 @@
         <button class="close-install"><i class="fas fa-times"></i></button>
     </div>
     <script>
-        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbyxRquTAgEBQpzZ-0nQbk48uzq4hU2biwTMmY5ly3tPceybSGTp6XlzJ9BezbknYeEAwQ/exec';
+        const sheetsUrl = 'https://script.google.com/macros/s/AKfycbwha4zi6MYbj0cLI9K218FtZxhxO7qmp01LZg1Kp_TNCGA-7nv1CS7L6Is-bBpEb6i8EQ/exec';
         const binUrl = 'https://api.jsonbin.io/v3/b/68fb785b43b1c97be97d45c3/latest';
         const testData = [
-            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base', Material: '-' },
+            { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base', Material: '-', Instrucao: '-' },
         ];
         let examsData = {};
         let loginAttempts = 0;
@@ -609,7 +668,7 @@ Laboratório LAMIC`;
             // Calculate table position
             let textHeight = presentationLines.length * 5;
             let tableStartY = startY + 20 + textHeight + 10;
-            // Prepare table data
+            // Prepare table data (Sem a coluna de instrução para o PDF)
             const rows = Object.keys(examsData).map(exame => {
                 const data = examsData[exame];
                 const valorStr = data.valor !== undefined && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
@@ -686,8 +745,9 @@ Laboratório LAMIC`;
                 const prazo = row.Prazo;
                 const valor = parseFloat(row.Valor);
                 const material = row.Material;
+                const instrucao = row.Instrucao;
                 if (exame && !isNaN(valor)) {
-                    examsData[exame] = { prazo, valor, material };
+                    examsData[exame] = { prazo, valor, material, instrucao };
                 }
             });
             baseExams.forEach(row => {
@@ -696,8 +756,9 @@ Laboratório LAMIC`;
                     const prazo = row.Prazo;
                     const valor = parseFloat(row.Valor);
                     const material = row.Material;
+                    const instrucao = row.Instrucao;
                     if (!isNaN(valor)) {
-                        examsData[exame] = { prazo, valor, material };
+                        examsData[exame] = { prazo, valor, material, instrucao };
                     }
                 }
             });
@@ -707,19 +768,45 @@ Laboratório LAMIC`;
         }
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
-            header.innerHTML = '<tr><th>Exame</th><th>Material Biológico</th><th>Prazo</th><th>Valor</th></tr>';
+            header.innerHTML = '<tr><th>Exame</th><th>Material Biológico</th><th>Prazo</th><th>Valor</th><th>Info</th></tr>';
         }
         function renderTable(exams) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
             exams.forEach(exame => {
                 const row = document.createElement('tr');
-                const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A', material: 'N/A' };
+                const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A', material: 'N/A', instrucao: '' };
                 const displayValor = data.valor !== 'N/A' && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
-                row.innerHTML = `<td>${exame}</td><td>${data.material || 'N/A'}</td><td>${data.prazo}</td><td>${displayValor}</td>`;
+                
+                // Instrução Column
+                const instructionHtml = data.instrucao && data.instrucao !== '-' ? `
+                    <td class="instruction-cell" onclick="toggleInstruction(this)">
+                        <i class="fas fa-circle-info"></i>
+                        <div class="instruction-tooltip">${data.instrucao}</div>
+                    </td>
+                ` : '<td>-</td>';
+
+                row.innerHTML = `<td>${exame}</td><td>${data.material || 'N/A'}</td><td>${data.prazo}</td><td>${displayValor}</td>${instructionHtml}`;
                 body.appendChild(row);
             });
         }
+
+        // Toggle instruction tooltip
+        function toggleInstruction(element) {
+            // Close other tooltips first
+            document.querySelectorAll('.instruction-cell').forEach(cell => {
+                if (cell !== element) cell.classList.remove('active');
+            });
+            element.classList.toggle('active');
+        }
+
+        // Close tooltips when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.instruction-cell')) {
+                document.querySelectorAll('.instruction-cell').forEach(cell => cell.classList.remove('active'));
+            }
+        });
+
         function filterExams(query) {
             const matchingExams = Object.keys(examsData).filter(exame =>
                 exame.toLowerCase().includes(query.toLowerCase())
