@@ -317,6 +317,36 @@
     line-height: 1.5;
 }
 
+/* DESIGN MODERNIZADO DO HYPERLINK DENTRO DO TOOLTIP */
+.instruction-tooltip a {
+    display: inline-flex;
+    align-items: center;
+    color: #1a2b5f;
+    text-decoration: none;
+    font-weight: 700;
+    background: rgba(26, 43, 95, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin: 2px 0;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.instruction-tooltip a:hover {
+    background: #1a2b5f;
+    color: #ffffff;
+    box-shadow: 0 4px 8px rgba(26, 43, 95, 0.3);
+    transform: translateY(-1px);
+}
+
+.instruction-tooltip a::after {
+    content: "\f35d"; /* FontAwesome external link icon */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin-left: 8px;
+    font-size: 12px;
+}
+
 /* Seta da janela */
 .instruction-tooltip::after {
     content: "";
@@ -770,6 +800,18 @@ Laboratório LAMIC`;
             const header = document.getElementById('tableHeader');
             header.innerHTML = '<tr><th>Exame</th><th>Material Biológico</th><th>Prazo</th><th>Valor</th><th>Info</th></tr>';
         }
+
+        /* FUNÇÃO PARA GARANTIR DESIGN MODERNO E FUNCIONAL DOS LINKS NA INSTRUÇÃO */
+        function processHyperlinks(text) {
+            if (!text || text === '-') return '-';
+            // Regex para identificar tags <a> no texto
+            const aTagRegex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1[^>]*?>(.*?)<\/a>/gi;
+            // Garante que o link abra em nova aba e aplica segurança
+            return text.replace(aTagRegex, (match, quote, url, linkText) => {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+            });
+        }
+
         function renderTable(exams) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
@@ -778,11 +820,14 @@ Laboratório LAMIC`;
                 const data = examsData[exame] || { prazo: 'N/A', valor: 'N/A', material: 'N/A', instrucao: '' };
                 const displayValor = data.valor !== 'N/A' && !isNaN(data.valor) ? `R$ ${data.valor.toFixed(2)}` : 'N/A';
                 
+                // Processamento estrito do texto de instrução para hyperlinks
+                const finalInstructionText = processHyperlinks(data.instrucao);
+
                 // Instrução Column
                 const instructionHtml = data.instrucao && data.instrucao !== '-' ? `
                     <td class="instruction-cell" onclick="toggleInstruction(this)">
                         <i class="fas fa-circle-info"></i>
-                        <div class="instruction-tooltip">${data.instrucao}</div>
+                        <div class="instruction-tooltip">${finalInstructionText}</div>
                     </td>
                 ` : '<td>-</td>';
 
