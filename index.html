@@ -546,6 +546,12 @@ Laboratório LAMIC`;
         document.getElementById('comparisonTable').style.display = 'none';
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
+
+        // Função para normalizar texto removendo acentos e cedilhas
+        function normalizeText(text) {
+            return text.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
         // Load users from JSONBin with fallback
         async function info() {
             try {
@@ -852,15 +858,18 @@ Laboratório LAMIC`;
             }
         });
 
+        // Função de busca corrigida para ignorar acentos
         function filterExams(query) {
+            const normalizedQuery = normalizeText(query);
             const matchingExams = Object.keys(examsData).filter(exame =>
-                exame.toLowerCase().includes(query.toLowerCase())
+                normalizeText(exame).includes(normalizedQuery)
             );
             renderTable(matchingExams);
             if (!query) {
                 renderTable(Object.keys(examsData));
             }
         }
+
         document.getElementById('searchInput').addEventListener('input', (e) => filterExams(e.target.value));
         // Modal event listeners
         document.getElementById('downloadIcon').addEventListener('click', () => {
