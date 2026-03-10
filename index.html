@@ -551,7 +551,15 @@ Laboratório LAMIC`;
         function normalizeText(text) {
             return text.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
-
+        // Atualiza visibilidade do botão de download com base no usuário
+        function updateDownloadIcon() {
+            const icon = document.getElementById('downloadIcon');
+            if (currentUser === 'Laboratório LAMIC') {
+                icon.style.display = 'block';
+            } else {
+                icon.style.display = 'none';
+            }
+        }
         // Load users from JSONBin with fallback
         async function info() {
             try {
@@ -607,7 +615,8 @@ Laboratório LAMIC`;
                 document.querySelector('.search-container').style.display = 'block';
                 document.querySelector('.logo-container').style.display = 'block';
                 document.getElementById('comparisonTable').style.display = 'table';
-                document.getElementById('downloadIcon').style.display = 'block';
+                // only show download icon for the special user
+                updateDownloadIcon();
                 loginAttempts = 0;
                 lockoutTime = 10;
                 loadData();
@@ -743,7 +752,7 @@ Laboratório LAMIC`;
             // Save PDF
             doc.save('Lista de Exames - LAMIC.pdf');
             document.getElementById('loadingDownloadIcon').style.display = 'none';
-            document.getElementById('downloadIcon').style.display = 'block';
+            updateDownloadIcon();
         }
         // Format date
         function getFormattedDate() {
@@ -877,7 +886,7 @@ Laboratório LAMIC`;
         });
         document.getElementById('cancel-presentation').addEventListener('click', () => {
             hidePresentationModal();
-            document.getElementById('downloadIcon').style.display = 'block';
+            updateDownloadIcon();
         });
         document.getElementById('download-presentation').addEventListener('click', () => {
             hidePresentationModal();
