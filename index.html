@@ -547,9 +547,15 @@ Laboratório LAMIC`;
         // Disable login button initially
         document.getElementById('loginButton').disabled = true;
 
-        // Função para normalizar texto removendo acentos e cedilhas
+        // Função para normalizar texto removendo acentos, cedilhas, pontos, traços, espaços e símbolos especiais
         function normalizeText(text) {
-            return text.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return text.toString()
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[.,\-()#\$&!\*\+=\[\]{}\\|;:'"<>?\/%~`@]/g, "")
+                .replace(/\s+/g, "")
+                .trim();
         }
         // Atualiza visibilidade do botão de download com base no usuário
         function updateDownloadIcon() {
