@@ -104,11 +104,23 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .loading-overlay.show {
+            opacity: 1;
         }
         .loading-icon {
             font-size: 64px;
             color: #2c3e50;
             animation: spin 1s linear infinite;
+        }
+        #loading-percentage {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: bold;
+            font-family: 'Inter', sans-serif;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -161,6 +173,32 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+            box-sizing: border-box;
+            height: 40px;
+        }
+        .select-container {
+            position: relative;
+            width: 100%;
+        }
+        .login-box select.loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #1a2b5f;
+            font-size: 18px;
+            animation: spin 1s linear infinite;
+        }
+        .login-box .loading-spinner.show {
+            display: block;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         .login-box button {
             background-color: #1a2b5f;
@@ -196,6 +234,28 @@
             background: #1a2b5f;
             width: 0;
             transition: width 1s linear;
+        }
+        .loading-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color, #1a2b5f), #00d4ff, var(--accent-color, #1a2b5f));
+            background-size: 200% 100%;
+            animation: shimmer 2s ease-in-out infinite;
+            border-radius: 2px;
+            box-shadow: 0 0 4px rgba(0, 31, 63, 0.5);
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
         #waitMessage {
             color: red;
@@ -465,11 +525,17 @@
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box" id="loginBox">
             <h2>Login</h2>
-            <select id="userSelect">
-                <option value="">Selecione um usuário</option>
-            </select>
+            <div class="select-container">
+                <select id="userSelect" class="loading">
+                    <option value="">Carregando usuários...</option>
+                </select>
+                <i class="fas fa-spinner loading-spinner" id="userLoadingSpinner"></i>
+            </div>
             <input type="password" id="passwordInput" placeholder="Digite sua senha">
             <button id="loginButton" disabled>Entrar</button>
+            <div id="loading-bar-container" class="loading-bar-container" style="display: none;">
+                <div id="loading-bar" class="loading-bar"></div>
+            </div>
             <p class="error-message" id="errorMessage">Senha incorreta.</p>
             <div class="timer-bar" id="timerBar" style="display: none;">
                 <div class="timer-progress" id="timerProgress"></div>
@@ -496,6 +562,7 @@
     </div>
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <i class="fas fa-spinner loading-icon"></i>
+        <div id="loading-percentage">0%</div>
     </div>
     <table id="comparisonTable">
         <thead id="tableHeader"></thead>
@@ -518,6 +585,8 @@
         let isLocked = false;
         let users = [];
         let currentUser = '';
+        let loadingAnimationId = null;
+        let percentageAnimationId = null;
         // Texto padrão para a apresentação
         const defaultPresentationText = `Ao (Nome fantasia e CNPJ)
 
@@ -568,6 +637,10 @@ Laboratório LAMIC`;
         }
         // Load users from JSONBin with fallback
         async function info() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('show');
+            const spinner = document.getElementById('userLoadingSpinner');
+            spinner.classList.add('show');
             try {
                 const response = await fetch(binUrl, {
                     method: 'GET',
@@ -595,7 +668,10 @@ Laboratório LAMIC`;
                 option.textContent = user.user;
                 userSelect.appendChild(option);
             });
+            userSelect.classList.remove('loading');
             document.getElementById('loginButton').disabled = false;
+            overlay.classList.remove('show');
+            spinner.classList.remove('show');
         }
         // Show presentation modal
         function showPresentationModal() {
@@ -606,6 +682,68 @@ Laboratório LAMIC`;
         function hidePresentationModal() {
             document.getElementById('presentation-modal').style.display = 'none';
         }
+        // Start loading animation
+        function startLoadingAnimation() {
+            const container = document.getElementById('loading-bar-container');
+            const bar = document.getElementById('loading-bar');
+            container.style.display = 'block';
+            const duration = 15000; // 15 seconds
+            const startTime = Date.now();
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                let progress = (elapsed / duration) * 98; // up to 98%
+                const variation = (Math.random() - 0.5) * 2 * (1 - elapsed / duration);
+                progress += variation;
+                progress = Math.max(0, Math.min(98, progress));
+                bar.style.width = progress + '%';
+                if (elapsed < duration) {
+                    loadingAnimationId = requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+        // Stop loading animation
+        function stopLoadingAnimation() {
+            if (loadingAnimationId) {
+                cancelAnimationFrame(loadingAnimationId);
+                loadingAnimationId = null;
+            }
+            const bar = document.getElementById('loading-bar');
+            bar.style.width = '100%';
+            setTimeout(() => {
+                document.getElementById('loading-bar-container').style.display = 'none';
+                bar.style.width = '0%';
+            }, 800);
+        }
+        // Start percentage animation
+        function startPercentageAnimation() {
+            const percentageEl = document.getElementById('loading-percentage');
+            const duration = 15000; // 15 seconds
+            const startTime = Date.now();
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                let progress = (elapsed / duration) * 99; // up to 99%
+                progress = Math.max(0, Math.min(99, progress));
+                percentageEl.textContent = Math.round(progress) + '%';
+                if (elapsed < duration) {
+                    percentageAnimationId = requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+        // Stop percentage animation
+        function stopPercentageAnimation() {
+            if (percentageAnimationId) {
+                cancelAnimationFrame(percentageAnimationId);
+                percentageAnimationId = null;
+            }
+            const percentageEl = document.getElementById('loading-percentage');
+            percentageEl.textContent = '100%';
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').classList.remove('show');
+                percentageEl.textContent = '0%';
+            }, 500);
+        }
         // Handle login
         document.getElementById('loginButton').addEventListener('click', async () => {
             if (isLocked) return;
@@ -614,6 +752,9 @@ Laboratório LAMIC`;
             const user = users.find(u => u.user === selectedUser);
             if (user && user.password === password) {
                 currentUser = selectedUser;
+                startLoadingAnimation();
+                await loadData();
+                stopLoadingAnimation();
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.querySelector('h1').style.display = 'block';
                 document.getElementById('userName').textContent = selectedUser;
@@ -625,8 +766,8 @@ Laboratório LAMIC`;
                 updateDownloadIcon();
                 loginAttempts = 0;
                 lockoutTime = 10;
-                loadData();
             } else {
+                stopLoadingAnimation();
                 loginAttempts++;
                 document.getElementById('loginBox').classList.add('shake');
                 document.getElementById('errorMessage').style.display = 'block';
@@ -774,7 +915,9 @@ Laboratório LAMIC`;
         }
         // Load data from Google Sheets
         async function loadData() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('show');
+            startPercentageAnimation();
             let data;
             try {
                 const response = await fetch(sheetsUrl);
@@ -815,7 +958,7 @@ Laboratório LAMIC`;
             });
             renderTableHeader();
             renderTable(Object.keys(examsData));
-            document.getElementById('loadingOverlay').style.display = 'none';
+            stopPercentageAnimation();
         }
         function renderTableHeader() {
             const header = document.getElementById('tableHeader');
