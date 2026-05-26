@@ -575,7 +575,6 @@
     </div>
     <script>
         const sheetsUrl = 'https://script.google.com/macros/s/AKfycbwha4zi6MYbj0cLI9K218FtZxhxO7qmp01LZg1Kp_TNCGA-7nv1CS7L6Is-bBpEb6i8EQ/exec';
-        const binUrl = 'https://api.jsonbin.io/v3/b/68fb785b43b1c97be97d45c3/latest';
         const testData = [
             { Exame: 'Nenhum Exame Carregado', Prazo: '-', Valor: null, Tabela: 'base', Material: '-', Instrucao: '-' },
         ];
@@ -583,7 +582,17 @@
         let loginAttempts = 0;
         let lockoutTime = 10;
         let isLocked = false;
-        let users = [];
+        let users = [
+            { user: 'Laboratório LAMIC', password: 'Lamic6530@' },
+            { user: 'CLIMED', password: '4440Cm@' },
+            { user: 'Lab. Santa Maria', password: '15125sM@' },
+            { user: 'Lab. São Matheus', password: '4441sM@' },
+            { user: 'Lab. Osvaldo Cruz', password: '1592oC@' },
+            { user: 'Lab. Bom Jesus', password: '13805Bj@' },
+            { user: 'Vidanalise', password: '5060Vn@' },
+            { user: 'LABCLINIC', password: '1553Lc@' },
+            { user: 'LACC', password: '1523Lc@' }
+        ];
         let currentUser = '';
         let loadingAnimationId = null;
         let percentageAnimationId = null;
@@ -635,31 +644,12 @@ Laboratório LAMIC`;
                 icon.style.display = 'none';
             }
         }
-        // Load users from JSONBin with fallback
+        // Load users - now using local hardcoded users
         async function info() {
             const overlay = document.getElementById('loadingOverlay');
             overlay.classList.add('show');
             const spinner = document.getElementById('userLoadingSpinner');
             spinner.classList.add('show');
-            try {
-                const response = await fetch(binUrl, {
-                    method: 'GET',
-                    headers: {
-                        'X-Access-Key': '$2a$10$AEzvnlbr8tXT0FIcphB/GuRb/PlkuUd80M5V1muqcw.0YgY8qHGAK',
-                        'X-Access-Key-Id': '68fb7884ae596e708f2902ca',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    users = data.record.users || [];
-                } else {
-                    throw new Error(`Erro HTTP: ${response.status}`);
-                }
-            } catch (error) {
-                console.warn('Falha ao carregar usuários do JSONBin, usando lista de fallback:', error);
-                users = []; // Ou fallback para uma lista vazia/hardcoded se necessário
-            }
             const userSelect = document.getElementById('userSelect');
             userSelect.innerHTML = '<option value="">Selecione um usuário</option>';
             users.forEach(user => {
@@ -687,13 +677,12 @@ Laboratório LAMIC`;
             const container = document.getElementById('loading-bar-container');
             const bar = document.getElementById('loading-bar');
             container.style.display = 'block';
+            bar.style.width = '0%';
             const duration = 15000; // 15 seconds
             const startTime = Date.now();
             function animate() {
                 const elapsed = Date.now() - startTime;
                 let progress = (elapsed / duration) * 98; // up to 98%
-                const variation = (Math.random() - 0.5) * 2 * (1 - elapsed / duration);
-                progress += variation;
                 progress = Math.max(0, Math.min(98, progress));
                 bar.style.width = progress + '%';
                 if (elapsed < duration) {
