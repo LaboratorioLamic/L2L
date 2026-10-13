@@ -242,6 +242,29 @@
     .valor-box .l { font-size: 12px; color: var(--text-muted); }
     .valor-box .v { font-family: "DM Mono", monospace; font-size: 22px; font-weight: 500; letter-spacing: -.02em; margin-top: 2px; }
     .ins-txt { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+    .secs { display: flex; flex-direction: column; gap: 10px; }
+    .sec { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-card); }
+    .sec-h { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: color-mix(in srgb, var(--c) 7%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--c) 16%, transparent); }
+    .sec-h b { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .sec-ic { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; background: var(--c); }
+    .sec-cp { width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; color: var(--text-muted); font-size: 12.5px; transition: var(--t); }
+    .sec-cp:hover { color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+    .sec-b { padding: 11px 14px 12px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); overflow-wrap: anywhere; }
+    .sec-b p { margin: 0 0 6px; }
+    .sec-b p:last-child { margin-bottom: 0; }
+    .sec-b p.sub { font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+    .sec-b p.sub:first-child { margin-top: 0; }
+    .sec-b ul { margin: 0 0 6px; padding: 0; list-style: none; }
+    .sec-b ul:last-child { margin-bottom: 0; }
+    .sec-b li { position: relative; padding-left: 15px; margin-bottom: 3px; }
+    .sec-b li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
+    /* campo longo abre recolhido: "Ver mais" mostra o restante */
+    .sec.corta:not(.aberta) .sec-tx { max-height: 64px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
+    .sec-mais { display: none; width: 100%; border: 0; border-top: 1px solid var(--border); background: none; padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--c); gap: 6px; align-items: center; justify-content: center; transition: var(--t); }
+    .sec.corta .sec-mais { display: flex; }
+    .sec-mais:hover { background: color-mix(in srgb, var(--c) 8%, transparent); }
+    .sec-mais i { font-size: 10px; transition: transform .2s; }
+    .sec.aberta .sec-mais i { transform: rotate(180deg); }
     .anexos { display: flex; flex-direction: column; gap: 6px; }
     .anexo { display: flex; gap: 11px; align-items: center; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); text-decoration: none; transition: var(--t); }
     .anexo:hover { border-color: var(--cyan); background: var(--cyan-light); }
@@ -717,6 +740,71 @@
     // Instrução é texto puro: marcação antiga (<a href>…</a>) sai, fica só o texto
     const textoLimpo = t => String(t || '').replace(/<\/?[a-z][^>]*>/gi, '').replace(/\n{3,}/g, '\n\n').trim();
 
+    // ── Instrução em campos por categoria ─────────────────────────
+    // O Comercial grava catalogo/{chave}/secoes; exame ainda não migrado traz só o texto
+    // corrido (instrucao), separado aqui pelos títulos. Mesma regra de script/secoes.js
+    // do Comercial: manter as duas cópias iguais.
+    const SECOES = {
+      jejum:        { nome: 'Jejum',                icone: 'fa-utensils',             cor: '#e8890c', re: /^(tempo de )?jejum( obrigatorio)?$/ },
+      orientacoes:  { nome: 'Orientações',          icone: 'fa-clipboard-list',       cor: '#00a8cc', re: /^(orientacao|orientacoes|preparo|instrucoes( de (preparo|coleta))?|informacoes de preparo e coleta)$/ },
+      questionario: { nome: 'Questionário',         icone: 'fa-clipboard-question',   cor: '#6366f1', re: /^questionarios?$/ },
+      interacoes:   { nome: 'Interações',           icone: 'fa-triangle-exclamation', cor: '#d97706', re: /^((interacao|interacoes)( medicamentosas?)?|interferentes)$/ },
+      rejeicao:     { nome: 'Critério de rejeição', icone: 'fa-ban',                  cor: '#e63946', re: /^(criterios? de )?rejeicao$/ },
+      conservacao:  { nome: 'Conservação',          icone: 'fa-temperature-low',      cor: '#0ea5e9', re: /^(conservacao|armazenamento|estabilidade)$/ },
+      coleta:       { nome: 'Coleta',               icone: 'fa-syringe',              cor: '#16a34a', re: /^coleta( (no )?apoio)?$/ },
+      sobre:        { nome: 'Sobre o exame',        icone: 'fa-magnifying-glass',     cor: '#64748b', re: /^(sobre( o exame)?|fundamentacao teorica|interpretacao do exame)$/ },
+      comentarios:  { nome: 'Comentários',          icone: 'fa-comment-dots',         cor: '#8b5cf6', re: /^(comentarios?|cometarios?)$/ }
+    };
+    const RE_EMOJI = /[\p{Extended_Pictographic}\uFE0F\u200D]/gu;
+    function tituloSecao(linha) {
+      const m = String(linha).trim().match(/^([^\p{L}\p{N}]*)([\p{L} ]{3,40}?)\s*(?::\s*(.*))?$/u);
+      if (!m || (m[1] && !/\p{Extended_Pictographic}/u.test(m[1]))) return null;
+      const t = m[2].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+      if (m[3] === undefined && /^jejum nao (e )?(necessario|obrigatorio)$/.test(t)) return { k: 'jejum', resto: m[2].trim() };
+      const k = Object.keys(SECOES).find(s => SECOES[s].re.test(t));
+      return k ? { k, resto: (m[3] || '').trim() } : null;
+    }
+    function limparSecoes(s) {
+      const r = {};
+      Object.keys(SECOES).forEach(k => {
+        const t = textoLimpo(s?.[k]).replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').replace(/(^|\n)[ \t]*(?:🔗[ \t]*)?anexos?[ \t]*:?[ \t]*$/i, '').trim();
+        if (t) r[k] = t;
+      });
+      return r;
+    }
+    function separarSecoes(texto) {
+      const partes = {};
+      let atual = 'sobre';
+      String(texto || '').replace(/\r\n?/g, '\n').split('\n').forEach(linha => {
+        const t = tituloSecao(linha);
+        if (t) { atual = t.k; (partes[atual] ??= []).push('', t.resto); }
+        else (partes[atual] ??= []).push(linha);
+      });
+      return limparSecoes(Object.fromEntries(Object.entries(partes).map(([k, ls]) => [k, ls.join('\n')])));
+    }
+    const secoesDe = c => c?.secoes ? limparSecoes(c.secoes) : separarSecoes(textoLimpo(c?.instrucao));
+    const semEmoji = t => String(t || '').replace(RE_EMOJI, '').replace(/^[ \t]+/gm, '').trim();
+    // Texto do campo em parágrafos, listas (•, -, *) e subtítulos (linha curta terminada em ":")
+    function htmlTextoSecao(texto) {
+      const RE_ITEM = /^(?:[•\-–*]|=>|\.{1,4})\s+/;
+      let html = '', lista = false;
+      const fechar = () => { if (lista) { html += '</ul>'; lista = false; } };
+      semEmoji(texto).split('\n').forEach(l => {
+        const t = l.trim();
+        if (!t) return fechar();
+        if (RE_ITEM.test(t)) { if (!lista) { html += '<ul>'; lista = true; } html += `<li>${esc(t.replace(RE_ITEM, ''))}</li>`; return; }
+        fechar();
+        html += `<p${/:$/.test(t) && t.length < 70 ? ' class="sub"' : ''}>${esc(t)}</p>`;
+      });
+      fechar();
+      return html;
+    }
+    async function copiarSecao(k) {
+      const x = _aberto, t = x && x.secoes[k] ? `${SECOES[k].nome}:\n${semEmoji(x.secoes[k])}` : '';
+      if (!t) return;
+      try { await navigator.clipboard.writeText(t); toast(`${SECOES[k].nome} copiado`); } catch (e) { toast('Não foi possível copiar'); }
+    }
+
     async function carregarDados(id) {
       const a = ACESSOS[id];
       if (!a) throw erroL2L('Acesso não encontrado. Fale com o Laboratório LAMIC.');
@@ -742,7 +830,8 @@
         if (!e || e.ativo === false || !(valor >= 0)) return null;
         const d = c.prazoDias ?? e.prazoDias, dias = d != null && !isNaN(d) ? +d : diasDoTexto(c.prazo || e.prazo);
         const x = { k, mn: String(e.mn || c.mn || k), nome: String(c.nome || e.descricao || e.mn || k), material: String(c.material || e.material || ''),
-          dias, prazo: prazoTexto(d) || String(c.prazo || e.prazo || ''), valor: +valor, neg: pLab[k] != null, instrucao: textoLimpo(c.instrucao), anexos: anexosDe(c) };
+          dias, prazo: prazoTexto(d) || String(c.prazo || e.prazo || ''), valor: +valor, neg: pLab[k] != null, secoes: secoesDe(c), anexos: anexosDe(c) };
+        x.instrucao = Object.keys(x.secoes).length > 0;
         x.busca = soLetras(x.mn + x.nome + x.material);
         return x;
       }).filter(Boolean);
@@ -894,8 +983,17 @@
     }
     const dominio = url => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
 
+    let _aberto = null;
+    // Só recolhe o campo que passa de 4 linhas (recolhido mostra 3)
+    function recolherSecoes() {
+      document.querySelectorAll('.secs .sec').forEach(s => s.classList.toggle('corta', s.querySelector('.sec-tx').scrollHeight > 96));
+    }
+    function alternarSecao(bt) {
+      const aberta = bt.parentElement.classList.toggle('aberta');
+      bt.querySelector('span').textContent = aberta ? 'Ver menos' : 'Ver mais';
+    }
     function abrirExame(i) {
-      const x = _vis[i];
+      const x = _aberto = _vis[i];
       if (!x) return;
       abrirGaveta({
         sobre: x.mn, titulo: x.nome,
@@ -903,7 +1001,11 @@
         corpo: `<div class="valor-box"><div><div class="l">Valor do exame</div><div class="v">${fmt(x.valor)}</div></div>
             ${x.neg ? '<span class="badge-s ok"><i class="fa-solid fa-handshake"></i>Valor negociado</span>' : ''}</div>
           <div class="sec-t"><i class="fa-solid fa-file-lines"></i>Instruções</div>
-          ${x.instrucao ? `<div class="ins-txt">${esc(x.instrucao)}</div>` : '<div class="muted" style="font-size:13px">Sem instrução cadastrada para este exame.</div>'}
+          ${x.instrucao ? `<div class="secs">${Object.entries(x.secoes).map(([k, t]) => `<section class="sec" style="--c:${SECOES[k].cor}">
+              <div class="sec-h"><span class="sec-ic"><i class="fa-solid ${SECOES[k].icone}"></i></span><b>${SECOES[k].nome}</b>
+                <button class="sec-cp" title="Copiar ${SECOES[k].nome}" onclick="copiarSecao('${k}')"><i class="fa-solid fa-copy"></i></button></div>
+              <div class="sec-b"><div class="sec-tx">${htmlTextoSecao(t)}</div></div>
+              <button class="sec-mais" onclick="alternarSecao(this)"><span>Ver mais</span><i class="fa-solid fa-chevron-down"></i></button></section>`).join('')}</div>` : '<div class="muted" style="font-size:13px">Sem instrução cadastrada para este exame.</div>'}
           ${x.anexos.length ? `<div class="sec-t"><i class="fa-solid fa-paperclip"></i>Anexos</div>
             <div class="anexos">${x.anexos.map(a => `<a class="anexo" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">
               <span class="po-ic"><i class="fa-solid ${iconeAnexo(a)}"></i></span><span class="tx"><b>${esc(a.nome)}</b><small>${esc(dominio(a.url))}</small></span>
@@ -913,6 +1015,7 @@
           <button class="btn" ${i < _vis.length - 1 ? '' : 'disabled'} onclick="abrirExame(${i + 1})" title="Próximo exame"><i class="fa-solid fa-chevron-right"></i></button>
           <button class="btn pri" onclick="fecharGaveta()">Fechar</button></div>`
       });
+      recolherSecoes();
     }
 
     // ── Proposta em PDF (acesso interno) ──────────────────────────
